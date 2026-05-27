@@ -4,7 +4,65 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Obsidian Trace | University QA</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-bright": "#f8f9fa",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-high": "#e7e8e9",
+                      "on-primary-fixed": "#001a42",
+                      "surface-dim": "#d9dadb",
+                      "primary-fixed-dim": "#adc6ff",
+                      "on-primary-container": "#fefcff",
+                      "error-container": "#ffdad6",
+                      "on-secondary-container": "#54647a",
+                      "on-primary-fixed-variant": "#004395",
+                      "on-tertiary-container": "#fffbff",
+                      "on-error-container": "#93000a",
+                      "secondary-container": "#d0e1fb",
+                      "on-surface": "#191c1d",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-tertiary-fixed": "#311400",
+                      "tertiary-container": "#b75b00",
+                      "surface-variant": "#e1e3e4",
+                      "surface-tint": "#005ac2",
+                      "background": "#f8f9fa",
+                      "inverse-primary": "#adc6ff",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#ffb786",
+                      "on-background": "#191c1d",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed": "#ffdcc6",
+                      "surface": "#f8f9fa",
+                      "on-tertiary-fixed-variant": "#723600",
+                      "on-error": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "outline-variant": "#c2c6d6",
+                      "primary-container": "#2170e4",
+                      "outline": "#727785",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "secondary-fixed": "#d3e4fe",
+                      "secondary": "#505f76",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "tertiary": "#924700",
+                      "primary-fixed": "#d8e2ff",
+                      "surface-container-highest": "#e1e3e4",
+                      "on-surface-variant": "#424754",
+                      "primary": "#0058be",
+                      "on-primary": "#ffffff",
+                      "inverse-surface": "#2e3132",
+                      "surface-container": "#edeeef",
+                      "inverse-on-surface": "#f0f1f2",
+                      "surface-container-low": "#f3f4f5"
+              }
+            }
+          }
+        }
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
@@ -19,11 +77,15 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a href="#" class="nav-item nav-item-active">
+      <a href="#" class="nav-item nav-item-active" id="nav-tracer" onclick="switchToTracer(event)">
         <span class="material-symbols-outlined nav-icon">sensors</span>
         Live Tracer
       </a>
-      <a href="#" class="nav-item">
+      <a href="#" class="nav-item" id="nav-eval" onclick="switchToEval(event)">
+        <span class="material-symbols-outlined nav-icon">assignment</span>
+        Evaluation
+      </a>
+      <a href="#" class="nav-item" id="nav-history" onclick="switchToHistory(event)">
         <span class="material-symbols-outlined nav-icon">history</span>
         Trace History
       </a>
@@ -171,6 +233,259 @@
     </div>
   </main>
 
+  <!-- ── EVALUATION MAIN ── -->
+  <main id="eval-main" class="main-scroll" style="display:none">
+    <div class="eval-container">
+
+      <!-- Run History Bar -->
+      <div class="eval-history-bar card" id="eval-history-bar" style="display:none">
+        <div class="section-label">
+          <span class="material-symbols-outlined label-icon" style="color:#505f76">history</span>
+          PAST RUNS
+        </div>
+        <div id="eval-history-list" class="eval-history-list"></div>
+      </div>
+
+      <!-- Step 1: Upload -->
+      <div id="eval-step-upload" class="eval-step">
+        <div class="card">
+          <div class="section-label">
+            <span class="material-symbols-outlined label-icon">upload_file</span>
+            UPLOAD EVALUATION DATASET
+          </div>
+          <div id="eval-upload-zone" class="eval-upload-zone">
+            <input type="file" id="eval-file-input" accept=".csv" style="display:none" />
+            <div class="eval-upload-content">
+              <span class="material-symbols-outlined eval-upload-icon">cloud_upload</span>
+              <p class="eval-upload-title">Drop your CSV file here</p>
+              <p class="eval-upload-sub">or <a href="#" onclick="document.getElementById('eval-file-input').click();return false" class="eval-upload-link">browse files</a></p>
+              <p class="eval-upload-hint">Supports .csv files with headers</p>
+            </div>
+          </div>
+          <div id="eval-file-info" class="eval-file-info" style="display:none">
+            <span class="material-symbols-outlined" style="color:#16a34a;font-size:20px;font-variation-settings:'FILL' 1">check_circle</span>
+            <div class="eval-file-details">
+              <span id="eval-file-name" class="eval-file-name"></span>
+              <span id="eval-file-rows" class="eval-file-rows"></span>
+            </div>
+            <button class="eval-file-clear" onclick="evalClearFile()">×</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Column Mapping -->
+      <div id="eval-step-columns" class="eval-step" style="display:none">
+        <div class="card">
+          <div class="section-label">
+            <span class="material-symbols-outlined label-icon" style="color:#0058be">view_column</span>
+            COLUMN MAPPING
+          </div>
+          <div class="eval-column-grid">
+            <div class="eval-col-panel">
+              <h4 class="eval-col-panel-title">
+                <span class="material-symbols-outlined" style="font-size:18px">input</span>
+                Input Column
+              </h4>
+              <p class="eval-col-panel-desc">Select the column containing the questions/inputs</p>
+              <div id="eval-input-cols" class="eval-col-list"></div>
+            </div>
+            <div class="eval-col-divider"></div>
+            <div class="eval-col-panel">
+              <h4 class="eval-col-panel-title">
+                <span class="material-symbols-outlined" style="font-size:18px">fact_check</span>
+                Evaluation Columns
+              </h4>
+              <p class="eval-col-panel-desc">Select columns to check results against (each scored separately)</p>
+              <div id="eval-check-cols" class="eval-col-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Table -->
+        <div class="card" style="margin-top:14px">
+          <div class="section-label">
+            <span class="material-symbols-outlined label-icon" style="color:#505f76">table_chart</span>
+            DATA PREVIEW
+          </div>
+          <div class="eval-preview-wrap">
+            <table id="eval-preview-table" class="eval-preview-table"></table>
+          </div>
+        </div>
+
+        <!-- Run Config -->
+        <div class="card" style="margin-top:14px">
+          <div class="eval-run-config">
+            <div class="eval-run-config-left">
+              <label class="eval-label">Dataset Name</label>
+              <input type="text" id="eval-dataset-name" class="eval-input" placeholder="e.g. Golden Dataset v1" value="Evaluation Run" />
+            </div>
+            <button id="eval-start-btn" class="eval-start-btn" disabled onclick="evalStartRun()">
+              <span class="material-symbols-outlined" style="font-size:18px">play_arrow</span>
+              START EVALUATION
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Progress -->
+      <div id="eval-step-progress" class="eval-step" style="display:none">
+        <div class="card">
+          <div class="section-label">
+            <span class="material-symbols-outlined label-icon eval-spin">hourglass_top</span>
+            EVALUATION IN PROGRESS
+          </div>
+          <div class="eval-progress-wrap">
+            <div class="eval-progress-bar-track">
+              <div id="eval-progress-fill" class="eval-progress-bar-fill" style="width:0%"></div>
+            </div>
+            <div class="eval-progress-info">
+              <span id="eval-progress-text" class="eval-progress-text">Starting evaluation…</span>
+              <span id="eval-progress-pct" class="eval-progress-pct">0%</span>
+            </div>
+            <div id="eval-progress-log" class="eval-progress-log"></div>
+          </div>
+          <div style="text-align:center;margin-top:20px;display:none" id="eval-progress-actions">
+            <button class="eval-new-btn" onclick="evalReset()">⟵ New Evaluation</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Results Dashboard -->
+      <div id="eval-step-results" class="eval-step" style="display:none">
+
+        <!-- Top Metric Cards -->
+        <div id="eval-metrics" class="eval-metrics-grid"></div>
+
+        <!-- Score Distribution + Per-Column -->
+        <div class="eval-breakdown-grid">
+          <div class="card" id="eval-distribution-card">
+            <div class="section-label">
+              <span class="material-symbols-outlined label-icon" style="color:#924700">bar_chart</span>
+              SCORE DISTRIBUTION
+            </div>
+            <div id="eval-distribution"></div>
+          </div>
+          <div class="card" id="eval-per-column-card">
+            <div class="section-label">
+              <span class="material-symbols-outlined label-icon" style="color:#0058be">view_column</span>
+              PER-COLUMN BREAKDOWN
+            </div>
+            <div id="eval-per-column"></div>
+          </div>
+        </div>
+
+        <!-- Instance Table -->
+        <div class="card" style="margin-top:14px">
+          <div class="section-label">
+            <span class="material-symbols-outlined label-icon">table_rows</span>
+            INSTANCE RESULTS
+            <div class="eval-table-controls">
+              <button class="eval-filter-btn eval-filter-active" onclick="evalFilterTable('all',this)">All</button>
+              <button class="eval-filter-btn" onclick="evalFilterTable('pass',this)">Pass</button>
+              <button class="eval-filter-btn" onclick="evalFilterTable('fail',this)">Fail</button>
+            </div>
+          </div>
+          <div class="eval-table-wrap">
+            <table id="eval-instance-table" class="eval-instance-table"></table>
+          </div>
+        </div>
+
+        <!-- New Evaluation Buttons -->
+        <div style="text-align:center;margin-top:20px;display:flex;justify-content:center;gap:12px">
+          <button class="eval-new-btn" style="background:#f3f4f5;border-color:#c2c6d6;color:#505f76" onclick="evalBackToMapper()">⟵ Run Another (Same File)</button>
+          <button class="eval-new-btn" onclick="evalReset()">+ New Dataset</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── TRACE HISTORY MAIN ── -->
+  <main id="history-main" class="main-scroll" style="display:none">
+    <div class="max-w-[1400px] mx-auto px-6 py-6">
+      <!-- Page Header -->
+      <div class="flex justify-between items-end mb-6">
+        <div>
+          <h2 class="text-3xl font-semibold tracking-tight text-slate-900 mb-1">Trace History</h2>
+          <p class="text-slate-500 text-sm">Review and audit University QA agent interactions across all modules.</p>
+        </div>
+        <div class="flex space-x-2 items-center">
+          <!-- Search box -->
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+            <input type="text" id="history-search" class="bg-white border border-slate-300 rounded-lg pl-9 pr-4 py-1.5 text-xs w-60 outline-none focus:border-blue-500 transition-all placeholder:text-slate-400" placeholder="Search traces..." oninput="historyOnSearchInput(this)" />
+          </div>
+          <!-- Health status badge -->
+          <div class="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
+            <span class="w-2 h-2 rounded-full bg-emerald-600" id="history-health-dot"></span>
+            <span class="font-semibold text-slate-800" id="history-health-text">100% Health</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <!-- Stats Card 1 -->
+        <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm relative overflow-hidden">
+          <div class="text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase mb-2">Total Queries</div>
+          <div class="text-2xl font-bold text-slate-800" id="stat-total-queries">-</div>
+          <div class="absolute bottom-0 left-0 w-full h-1 bg-blue-500/20"></div>
+        </div>
+        <!-- Stats Card 2 -->
+        <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+          <div class="text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase mb-2">Avg. Latency</div>
+          <div class="text-2xl font-bold text-slate-800" id="stat-avg-latency">-</div>
+        </div>
+        <!-- Stats Card 3 -->
+        <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+          <div class="text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase mb-2">Self-Heal Rate</div>
+          <div class="text-2xl font-bold text-slate-800" id="stat-self-heal">-</div>
+        </div>
+        <!-- Stats Card 4 -->
+        <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+          <div class="text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase mb-2">Error Rate</div>
+          <div class="text-2xl font-bold text-red-600" id="stat-error-rate">-</div>
+        </div>
+      </div>
+      
+      <!-- Table Container -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+          <span class="text-xs font-extrabold tracking-wider text-slate-500 uppercase">AUDIT LOGS</span>
+          <div class="flex space-x-1" id="history-filter-group">
+            <button class="px-3 py-1 text-xs font-semibold rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all [&.active]:bg-blue-50 [&.active]:border-blue-200 [&.active]:text-blue-600 active" onclick="historyFilterOutcome('all', this)">All</button>
+            <button class="px-3 py-1 text-xs font-semibold rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all [&.active]:bg-blue-50 [&.active]:border-blue-200 [&.active]:text-blue-600" onclick="historyFilterOutcome('SUCCESS', this)">Success</button>
+            <button class="px-3 py-1 text-xs font-semibold rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all [&.active]:bg-blue-50 [&.active]:border-blue-200 [&.active]:text-blue-600" onclick="historyFilterOutcome('SELF_HEALED', this)">Self-Healed</button>
+            <button class="px-3 py-1 text-xs font-semibold rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all [&.active]:bg-blue-50 [&.active]:border-blue-200 [&.active]:text-blue-600" onclick="historyFilterOutcome('BLOCKED', this)">Blocked</button>
+            <button class="px-3 py-1 text-xs font-semibold rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all [&.active]:bg-blue-50 [&.active]:border-blue-200 [&.active]:text-blue-600" onclick="historyFilterOutcome('DECLINED', this)">Declined</button>
+            <button class="px-3 py-1 text-xs font-semibold rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all [&.active]:bg-blue-50 [&.active]:border-blue-200 [&.active]:text-blue-600" onclick="historyFilterOutcome('ERROR', this)">Error</button>
+          </div>
+        </div>
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50">
+              <th class="px-6 py-3 text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase w-32">Timestamp</th>
+              <th class="px-6 py-3 text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase w-1/2">Question</th>
+              <th class="px-6 py-3 text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase">Outcome</th>
+              <th class="px-6 py-3 text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase w-24">Latency</th>
+              <th class="px-6 py-3 text-[10.5px] font-extrabold tracking-wider text-slate-400 uppercase w-36 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="history-table-body">
+            <!-- Dynamic rows will be inserted here -->
+          </tbody>
+        </table>
+        
+        <!-- Pagination Footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center" id="history-pagination-footer">
+          <!-- Dynamic pagination info and buttons -->
+        </div>
+      </div>
+    </div>
+  </main>
+
   <script src="/static/app.js"></script>
+  <script src="/static/eval.js"></script>
+  <script src="/static/history.js"></script>
 </body>
 </html>
