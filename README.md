@@ -80,20 +80,7 @@ Three UI tabs:
 - **Evaluation** — CSV upload, column mapping, LLM-as-judge runs
 - **Trace History** — browse/search persisted past runs
 
-| Method | Path | Purpose |
-| ------ | ---- | ------- |
-| GET | `/` | Web UI |
-| GET | `/api/health` | Health + DB/LangSmith status |
-| POST | `/api/ask` | Ask a question (optional `thread_id`, `bypass_cache`) |
-| GET | `/api/schema/summary` | Table row counts |
-| GET | `/api/traces/examples` | Seeded example traces |
-| GET | `/api/history` | Paginated trace history (search/filter) |
-| GET | `/api/history/{id}` | Single trace detail |
-| POST | `/api/eval/upload` | Upload evaluation CSV |
-| POST | `/api/eval/run` | Start eval run |
-| GET | `/api/eval/status/{id}` | Poll run progress |
-| GET | `/api/eval/results/{id}` | Full results + statistics |
-| GET | `/api/eval/runs` | List past eval runs |
+Once the server is running, navigate to `http://localhost:8000/docs` to view the interactive API documentation (Swagger UI).
 
 ## Evaluation
 
@@ -110,10 +97,10 @@ Optional config overrides in [config.py](config.py): `EVAL__JUDGE_MODEL`, `EVAL_
 ## Running Tests
 
 ```bash
-# All unit tests (fast, no API keys needed) — 333 tests
+# All unit tests (fast, no API keys needed)
 pytest --ignore=tests/evals
 
-# Include LLM eval tests (requires API keys) — 398 tests
+# Include LLM eval tests (requires API keys)
 pytest
 ```
 
@@ -129,67 +116,18 @@ python run_questions.py
 
 ```
 GenpactHW/
-├── db/                         Database layer (no LLM code)
-│   ├── schema.sql              SQLite DDL — 4 tables (teachers, students, courses, enrollments)
-│   ├── connection.py           SQLAlchemy engine factory + FK enforcement
-│   ├── seed.py                 Deterministic seed: 6 teachers, 20 students, 12 courses, 52 enrollments
-│   ├── database.py             DatabaseManager — agent's only DB interface
-│   └── history.py              Persistent trace history (history.db)
-├── agent/                      LangGraph pipeline
-│   ├── state.py                AgentState TypedDict (InputState / OutputState)
-│   ├── nodes.py                9 node functions + 3 routing functions
-│   ├── graph.py                StateGraph assembly, compiled app with MemorySaver
-│   ├── llm.py                  LLM provider factory (OpenAI / Anthropic auto-detect)
-│   ├── cache.py                LRU query cache with TTL
-│   └── conversation_manager.py Multi-turn session management
-├── prompts/                    Prompt templates (no execution logic)
-│   ├── manager.py              PromptManager — builds all message lists
-│   ├── schemas.py              Pydantic structured output models
-│   ├── hub.py                  LangSmith Hub integration (optional)
-│   └── domains/
-│       ├── base.py             Abstract domain interface
-│       └── university.py       University-specific prompt templates
-├── evaluation/
-│   ├── evaluator.py            LLM-as-judge + CSV pipeline
-│   └── execution_accuracy.py   Deterministic SQL result comparison
-├── api/
-│   ├── main.py                 FastAPI app + trace/history routes
-│   └── eval_routes.py          Evaluation API (/api/eval/*)
-├── web/                        Browser UI
-│   ├── index.html
-│   ├── app.js                  Dashboard + trace timeline
-│   ├── eval.js                 Evaluation dashboard
-│   ├── history.js              Trace history browser
-│   └── styles.css
-├── tracing/
-│   └── tracer.py               print_trace(), get_trace_summary(), LangSmith config check
-├── scripts/
-│   └── push_prompts_to_hub.py  Push prompts to LangSmith Hub
-├── tests/                      pytest suites (333 offline)
-│   ├── conftest.py             Shared fixtures (in-memory DB, mock LLMs)
-│   ├── test_database.py        DB layer — schema, FK, seed counts
-│   ├── test_sql_generation.py  SQL generation pipeline
-│   ├── test_agent_e2e.py       End-to-end graph tests
-│   ├── test_nodes.py           Node function unit tests
-│   ├── test_cache.py           LRU cache tests
-│   ├── test_conversation_manager.py  Session + follow-up tests
-│   ├── test_prompt_manager.py  Prompt builder tests
-│   ├── test_prompt_builder.py  Prompt builder edge cases
-│   ├── test_state_and_prompts.py     State schema tests
-│   ├── test_tracing.py         Tracing utilities
-│   ├── test_tracing_ui_api.py  API + tracing integration
-│   ├── test_config.py          Config validation
-│   ├── test_history.py         Trace history persistence
-│   ├── test_eval_routes.py     Evaluation API routes
-│   ├── test_evaluator.py       Evaluation engine
-│   ├── test_execution_accuracy.py  SQL result comparison
-│   └── evals/                  LLM evaluation tests (require API keys)
-│       ├── eval_sql_generation.py
-│       └── eval_relevance.py
-├── docs/
-│   └── golden_dataset.csv      30-question evaluation dataset
-├── config.py                   Pydantic-settings config (LLM temps, retries, cache TTL, EvalConfig)
-├── run_questions.py            Demo script — 20 questions through the agent
+├── agent/                      LangGraph pipeline and session management
+├── api/                        FastAPI app and routes
+├── db/                         Database layer and schema
+├── docs/                       Documentation and evaluation datasets
+├── evaluation/                 LLM-as-judge and execution accuracy pipelines
+├── prompts/                    Prompt templates and management
+├── scripts/                    Utility scripts
+├── tests/                      Pytest suites
+├── tracing/                    Tracing utilities and LangSmith integration
+├── web/                        Browser UI and dashboards
+├── config.py                   Pydantic-settings configuration
+├── run_questions.py            Demo script for running test queries
 ├── requirements.txt
 └── .env.example
 ```
