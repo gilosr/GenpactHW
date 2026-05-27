@@ -6,7 +6,7 @@ A natural language question-answering system over a university database, built w
 
 The agent is a 9-node LangGraph pipeline that converts natural language questions into SQL, executes them, and formats the results. It includes a retry cycle for failed queries and graceful handling of off-topic questions.
 
-Simple cache mechanism before the graph starts:
+Request flow with cache before the LangGraph pipeline:
 
 ```mermaid
 flowchart TD
@@ -106,7 +106,7 @@ pytest
 
 ## Demo Script
 
-Run 20 questions through the agent (relevant + off-topic) to see the full pipeline in action:
+Run the golden dataset questions through the agent (relevant + off-topic) to see the full pipeline in action:
 
 ```bash
 python run_questions.py
@@ -119,7 +119,7 @@ GenpactHW/
 ├── agent/                      LangGraph pipeline and session management
 ├── api/                        FastAPI app and routes
 ├── db/                         Database layer and schema
-├── docs/                       Documentation and evaluation datasets
+├── docs/                       Golden evaluation dataset
 ├── evaluation/                 LLM-as-judge and execution accuracy pipelines
 ├── prompts/                    Prompt templates and management
 ├── scripts/                    Utility scripts
@@ -148,5 +148,5 @@ GenpactHW/
 - **Error handling** — destructive SQL blocked before execution; empty results and DB errors trigger retry or controlled error response
 - **Memory and caching** — `ConversationManager` injects sliding-window history for follow-ups; `QueryCache` serves exact-match standalone questions (LRU + TTL)
 - **Prompt management** — domain templates via `PromptManager` with optional LangSmith Hub pull and local fallback
-- **Tracing** — LangSmith integration plus `steps` audit trail in agent state; trace history persisted to `history.db`
+- **Tracing** — LangSmith integration plus `steps` audit trail in agent state; trace history persisted to `db/history.db`
 - **Evaluation** — LLM-as-judge rubric plus execution accuracy for golden dataset regression
