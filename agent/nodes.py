@@ -224,14 +224,20 @@ def check_relevance(state: AgentState) -> dict:
     step_tag = "check_relevance"
     try:
         llm = get_relevance_llm()
-        messages = get_prompt_manager().build_relevance_check_messages(question)
+        bundle = get_prompt_manager().build_relevance_check_messages(question)
+        messages = bundle.messages
+        trace_metadata = bundle.trace_metadata or None
         try:
-            result = invoke_prompt(llm.with_structured_output(RelevanceResult), messages)
+            result = invoke_prompt(
+                llm.with_structured_output(RelevanceResult),
+                messages,
+                trace_metadata=trace_metadata,
+            )
             if not isinstance(result, RelevanceResult):
                 raise TypeError("structured output returned unexpected type")
             relevance = result.classification
         except Exception:
-            response = invoke_prompt(llm, messages)
+            response = invoke_prompt(llm, messages, trace_metadata=trace_metadata)
             raw = _extract_content(response).lower().strip()
             # Check "not_relevant" first — it is a superset of "relevant" as a substring.
             relevance = "not_relevant" if "not_relevant" in raw else "relevant"
@@ -260,8 +266,12 @@ def polite_decline(state: AgentState) -> dict:
     step_tag = "polite_decline"
     try:
         llm = get_answer_llm()
-        messages = get_prompt_manager().build_polite_decline_messages(question)
-        response = invoke_prompt(llm, messages)
+        bundle = get_prompt_manager().build_polite_decline_messages(question)
+        response = invoke_prompt(
+            llm,
+            bundle.messages,
+            trace_metadata=bundle.trace_metadata or None,
+        )
         answer = _extract_content(response).strip()
         logger.info("%s: generated decline response", step_tag)
     except Exception as exc:
@@ -556,19 +566,25 @@ def format_answer(state: AgentState) -> dict:
     try:
         llm = get_answer_llm()
         formatted_results = _format_results_for_prompt(results, row_count)
-        messages = get_prompt_manager().build_answer_formatting_messages(
+        bundle = get_prompt_manager().build_answer_formatting_messages(
             question=question,
             sql_query=sql_query,
             results=formatted_results,
             row_count=row_count,
         )
+        messages = bundle.messages
+        trace_metadata = bundle.trace_metadata or None
         try:
-            structured = invoke_prompt(llm.with_structured_output(AnswerResult), messages)
+            structured = invoke_prompt(
+                llm.with_structured_output(AnswerResult),
+                messages,
+                trace_metadata=trace_metadata,
+            )
             if not isinstance(structured, AnswerResult):
                 raise TypeError("structured output returned unexpected type")
             answer = structured.answer
         except Exception:
-            response = invoke_prompt(llm, messages)
+            response = invoke_prompt(llm, messages, trace_metadata=trace_metadata)
             answer = _extract_content(response).strip()
         logger.info("%s: formatted answer (%d chars)", step_tag, len(answer))
     except Exception as exc:

@@ -66,6 +66,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
@@ -352,6 +353,36 @@
 
       <!-- Step 4: Results Dashboard -->
       <div id="eval-step-results" class="eval-step" style="display:none">
+
+        <!-- Metrics Guide -->
+        <div class="card" style="margin-bottom:14px;border-color:#dce8ff;background:#f8faff">
+          <div class="section-label" style="margin-bottom:8px;cursor:pointer" onclick="toggleMetricsGuide()">
+            <span class="material-symbols-outlined label-icon" style="color:#0058be">info</span>
+            EVALUATION METRICS GUIDE
+            <span id="metrics-guide-chevron" class="material-symbols-outlined" style="margin-left:auto;font-size:18px;color:#0058be">expand_less</span>
+          </div>
+          <div id="metrics-guide-content">
+            <div class="eval-guide-grid">
+              <div class="eval-guide-col">
+                <h5 class="eval-guide-title">Core Metrics</h5>
+                <ul class="eval-guide-list">
+                  <li><strong>Overall Score:</strong> 1–5 average based on semantic accuracy.</li>
+                  <li><strong>Pass Rate:</strong> % of questions scoring 3.0 (Acceptable) or higher.</li>
+                  <li><strong>Execution Accuracy:</strong> Deterministic check: Does the Agent's SQL retrieve the same data as the Ground Truth SQL?</li>
+                </ul>
+              </div>
+              <div class="eval-guide-col">
+                <h5 class="eval-guide-title">Scoring Rubric</h5>
+                <ul class="eval-guide-list">
+                  <li><span class="eval-score-badge" style="background:#dce8ff;color:#0058be">5</span> <strong>Excellent:</strong> 100% accurate facts and numbers.</li>
+                  <li><span class="eval-score-badge" style="background:#dcfce7;color:#16a34a">4</span> <strong>Good:</strong> Correct core fact; minor precision variation.</li>
+                  <li><span class="eval-score-badge" style="background:#fef3c7;color:#d97706">3</span> <strong>Acceptable:</strong> Correct subject, but imprecise value.</li>
+                  <li><span class="eval-score-badge" style="background:#fee2e2;color:#dc2626">1-2</span> <strong>Poor/Fail:</strong> Wrong facts or off-topic response.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Top Metric Cards -->
         <div id="eval-metrics" class="eval-metrics-grid"></div>

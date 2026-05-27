@@ -26,10 +26,7 @@ golden_results.csv
 system-diagrams.html
 tracing_demo.html
 
-# --- Internal docs ---
+# --- Internal docs (keep only golden_dataset.csv tracked) ---
+docs/*
+!docs/golden_dataset.csv
 docs/context/
-docs/code-review.md
-docs/miro-c4-diagram-prompt.md
-docs/prompt-audit-p2.md
-docs/interview-cheatsheet.md
-docs/INTERVIEW-DEFENSE-GUIDE.md

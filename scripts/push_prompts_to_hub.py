@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Publish SQL generation and regeneration prompts to LangSmith Prompt Hub.
+Publish all agent prompts to LangSmith Prompt Hub.
 
 One-time setup:
   1. Set LANGSMITH_API_KEY in .env
@@ -35,6 +35,7 @@ from prompts.manager import PromptManager, get_dialect_rules
 
 load_dotenv()
 
+_RELEVANCE_HUMAN = "<user_question>\n{question}\n</user_question>\n\nClassification:"
 _SQL_GENERATION_HUMAN = (
     "DATABASE SCHEMA:\n{schema}\n\n"
     "<user_question>\n{question}\n</user_question>\n\nSQLQuery:"
@@ -45,9 +46,16 @@ _SQL_REGENERATION_HUMAN = (
     "Original question:\n<user_question>\n{question}\n</user_question>\n\n"
     "Corrected SQLQuery:"
 )
+_ANSWER_HUMAN = (
+    "SQL Query Used:\n{sql_query}\n\n"
+    "Query Results:\n{results}\n"
+    "Number of rows returned: {row_count}\n\n"
+    "<user_question>\n{question}\n</user_question>\n\nAnswer:"
+)
+_DECLINE_HUMAN = "<user_question>\n{question}\n</user_question>\n\nResponse:"
 
 
-def _build_templates(
+def _build_dialect_templates(
     domain: str,
     dialect: str,
 ) -> tuple[ChatPromptTemplate, ChatPromptTemplate]:
@@ -63,39 +71,44 @@ def _build_templates(
     return generation, regeneration
 
 
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Push SQL prompts to LangSmith Prompt Hub.",
-    )
-    parser.add_argument(
-        "--domain",
-        default=settings.prompt.domain,
-        help="Domain name (default: config prompt.domain)",
-    )
-    parser.add_argument(
-        "--dialects",
-        default="sqlite,postgresql",
-        help="Comma-separated dialect list (default: sqlite,postgresql)",
-    )
-    parser.add_argument(
-        "--tag",
-        default=settings.prompt.hub_tag,
-        help="Commit tag to apply (default: config prompt.hub_tag)",
-    )
-    parser.add_argument(
-        "--prefix",
-        default=settings.prompt.hub_prefix,
-        help="Hub repo prefix (default: config prompt.hub_prefix)",
-    )
-    return parser.parse_args()
+def _build_domain_templates(domain: str) -> dict[str, ChatPromptTemplate]:
+    """Domain-only prompts (dialect-independent). Uses sqlite rules for rendering."""
+    pm = PromptManager(get_domain_data(domain), get_dialect_rules("sqlite"), hub_loader=None)
+    return {
+        "relevance": ChatPromptTemplate.from_messages([
+            ("system", pm._render_relevance_system()),
+            ("human", _RELEVANCE_HUMAN),
+        ]),
+        "answer-formatting": ChatPromptTemplate.from_messages([
+            ("system", pm._render_answer_formatting_system()),
+            ("human", _ANSWER_HUMAN),
+        ]),
+        "polite-decline": ChatPromptTemplate.from_messages([
+            ("system", pm._render_polite_decline_system()),
+            ("human", _DECLINE_HUMAN),
+        ]),
+    }
 
 
-def _push_prompt(
-    client,
-    prompt_id: str,
-    template: ChatPromptTemplate,
-    tag: str,
-) -> None:
+def _ensure_commit_tag(client, prompt_id: str, tag: str) -> None:
+    """Apply commit tag to the latest commit (e.g. when content is unchanged)."""
+    from langsmith import utils as ls_utils
+
+    owner, prompt_name, _ = ls_utils.parse_prompt_identifier(prompt_id)
+    prompt_owner_and_name = f"{owner}/{prompt_name}"
+    commits = list(client.list_prompt_commits(prompt_id, limit=1))
+    if not commits:
+        return
+    commit = commits[0]
+    try:
+        client._create_commit_tags(prompt_owner_and_name, str(commit.id), tag)
+        print(f"  Tagged latest commit ({commit.commit_hash[:8]}) -> {tag}")
+    except Exception as exc:
+        if "already" not in str(exc).lower() and "conflict" not in str(exc).lower():
+            print(f"  Warning: could not apply tag {tag!r}: {exc}", file=sys.stderr)
+
+
+def _push_prompt(client, prompt_id: str, template: ChatPromptTemplate, tag: str) -> None:
     from langsmith.utils import LangSmithConflictError
 
     try:
@@ -108,8 +121,36 @@ def _push_prompt(
     except LangSmithConflictError as exc:
         if "Nothing to commit" not in str(exc):
             raise
+        _ensure_commit_tag(client, prompt_id, tag)
         url = client._get_prompt_url(prompt_id)
         print(f"Unchanged {prompt_id} (already at latest commit) -> {url}")
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Push all agent prompts to LangSmith Prompt Hub.",
+    )
+    parser.add_argument(
+        "--domain",
+        default=settings.prompt.domain,
+        help="Domain name (default: config prompt.domain)",
+    )
+    parser.add_argument(
+        "--dialects",
+        default="sqlite,postgresql",
+        help="Comma-separated dialect list for SQL prompts (default: sqlite,postgresql)",
+    )
+    parser.add_argument(
+        "--tag",
+        default=settings.prompt.hub_tag,
+        help="Commit tag to apply (default: config prompt.hub_tag)",
+    )
+    parser.add_argument(
+        "--prefix",
+        default=settings.prompt.hub_prefix,
+        help="Hub name prefix (default: config prompt.hub_prefix)",
+    )
+    return parser.parse_args()
 
 
 def main() -> int:
@@ -127,8 +168,13 @@ def main() -> int:
         print("ERROR: No dialects specified.", file=sys.stderr)
         return 1
 
+    domain_templates = _build_domain_templates(args.domain)
+    for kind, template in domain_templates.items():
+        prompt_id = hub_prompt_name(args.prefix, args.domain, kind)
+        _push_prompt(client, prompt_id, template, args.tag)
+
     for dialect in dialects:
-        generation, regeneration = _build_templates(args.domain, dialect)
+        generation, regeneration = _build_dialect_templates(args.domain, dialect)
         for kind, template in (
             ("sql-generation", generation),
             ("sql-regeneration", regeneration),

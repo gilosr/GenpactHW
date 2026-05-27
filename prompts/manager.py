@@ -68,13 +68,19 @@ class PromptManager:
 
     # -- public API --------------------------------------------------------
 
-    def build_relevance_check_messages(self, question: str) -> list[BaseMessage]:
-        return [
+    def build_relevance_check_messages(self, question: str) -> PromptBundle:
+        local_messages = [
             SystemMessage(content=self._relevance_system),
             HumanMessage(
                 content=f"<user_question>\n{question}\n</user_question>\n\nClassification:"
             ),
         ]
+        return build_from_hub_or_local(
+            loader=self._hub_loader,
+            kind="relevance",
+            format_kwargs={"question": question},
+            local_messages=local_messages,
+        )
 
     def build_sql_generation_messages(
         self, schema: str, question: str
@@ -124,8 +130,8 @@ class PromptManager:
 
     def build_answer_formatting_messages(
         self, question: str, sql_query: str, results: str, row_count: int
-    ) -> list[BaseMessage]:
-        return [
+    ) -> PromptBundle:
+        local_messages = [
             SystemMessage(content=self._answer_system),
             HumanMessage(
                 content=(
@@ -136,14 +142,31 @@ class PromptManager:
                 )
             ),
         ]
+        return build_from_hub_or_local(
+            loader=self._hub_loader,
+            kind="answer-formatting",
+            format_kwargs={
+                "question": question,
+                "sql_query": sql_query,
+                "results": results,
+                "row_count": row_count,
+            },
+            local_messages=local_messages,
+        )
 
-    def build_polite_decline_messages(self, question: str) -> list[BaseMessage]:
-        return [
+    def build_polite_decline_messages(self, question: str) -> PromptBundle:
+        local_messages = [
             SystemMessage(content=self._decline_system),
             HumanMessage(
                 content=f"<user_question>\n{question}\n</user_question>\n\nResponse:"
             ),
         ]
+        return build_from_hub_or_local(
+            loader=self._hub_loader,
+            kind="polite-decline",
+            format_kwargs={"question": question},
+            local_messages=local_messages,
+        )
 
     @property
     def fallback_decline(self) -> str:

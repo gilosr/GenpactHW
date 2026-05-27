@@ -28,13 +28,13 @@ def test_answer_formatting_static_prefix_is_byte_stable_across_results() -> None
         sql_query="SELECT COUNT(*) FROM students;",
         results="student_count: 20",
         row_count=1,
-    )
+    ).messages
     second = pm.build_answer_formatting_messages(
         question="List teachers",
         sql_query="SELECT first_name FROM teachers;",
         results="| first_name |\n| Ada |",
         row_count=1,
-    )
+    ).messages
 
     assert first[0].content == second[0].content
     assert first[1].content != second[1].content
@@ -44,7 +44,7 @@ def test_builder_returns_system_then_human_messages() -> None:
     from prompts.manager import get_prompt_manager
 
     pm = get_prompt_manager()
-    messages = pm.build_relevance_check_messages("How many students?")
+    messages = pm.build_relevance_check_messages("How many students?").messages
 
     assert isinstance(messages[0], SystemMessage)
     assert isinstance(messages[1], HumanMessage)

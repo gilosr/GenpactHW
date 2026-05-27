@@ -624,6 +624,14 @@ function evalFilterTable(filter, btn) {
   }
 }
 
+function toggleMetricsGuide() {
+  const content = E("metrics-guide-content");
+  const chev = E("metrics-guide-chevron");
+  const isHidden = content.style.display === "none";
+  content.style.display = isHidden ? "" : "none";
+  chev.textContent = isHidden ? "expand_less" : "expand_more";
+}
+
 // ── Run History ───────────────────────────────────────────
 
 async function evalLoadHistory() {

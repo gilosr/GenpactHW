@@ -110,6 +110,24 @@ def test_dialect_routing_resolves_different_hub_prompt_names() -> None:
     assert loader.prompt_name("sql-regeneration", "postgresql") == (
         "genpact-university-qa-university-sql-regeneration-postgresql"
     )
+    assert loader.prompt_name("relevance") == (
+        "genpact-university-qa-university-relevance"
+    )
+    assert loader.prompt_name("answer-formatting") == (
+        "genpact-university-qa-university-answer-formatting"
+    )
+    assert loader.prompt_name("polite-decline") == (
+        "genpact-university-qa-university-polite-decline"
+    )
+
+
+def test_relevance_hub_disabled_matches_local(sqlite_pm: PromptManager) -> None:
+    bundle = sqlite_pm.build_relevance_check_messages("How many students?")
+    local = sqlite_pm.build_relevance_check_messages("How many students?").messages
+
+    assert isinstance(bundle, PromptBundle)
+    assert bundle.trace_metadata == {}
+    assert bundle.messages[0].content == local[0].content
 
 
 def test_build_from_hub_or_local_uses_format_kwargs() -> None:
@@ -134,9 +152,9 @@ def test_build_from_hub_or_local_uses_format_kwargs() -> None:
             bundle = build_from_hub_or_local(
                 loader=loader,
                 kind="sql-generation",
-                dialect="sqlite",
                 format_kwargs={"schema": "S", "question": "Q"},
                 local_messages=local,
+                dialect="sqlite",
             )
 
     assert bundle.trace_metadata["lc_hub_commit_hash"] == "deadbeef"

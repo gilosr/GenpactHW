@@ -179,8 +179,12 @@ def test_relevance(
     description: str,
     relevance_llm,
 ) -> None:
-    messages = get_prompt_manager().build_relevance_check_messages(question)
-    response = invoke_prompt(relevance_llm, messages)
+    bundle = get_prompt_manager().build_relevance_check_messages(question)
+    response = invoke_prompt(
+        relevance_llm,
+        bundle.messages,
+        trace_metadata=bundle.trace_metadata or None,
+    )
     predicted = _parse_label(response.content)
 
     assert predicted == expected, (

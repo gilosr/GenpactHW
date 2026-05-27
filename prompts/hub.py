@@ -14,13 +14,20 @@ logger = logging.getLogger(__name__)
 _HUB_METADATA_KEYS = ("lc_hub_owner", "lc_hub_repo", "lc_hub_commit_hash")
 
 
-def hub_prompt_name(prefix: str, domain: str, kind: str, dialect: str) -> str:
+def hub_prompt_name(
+    prefix: str, domain: str, kind: str, dialect: str | None = None
+) -> str:
     """Build a LangSmith-compatible prompt name (at most one '/' allowed).
 
-    Uses hyphens to encode prefix/domain/kind/dialect hierarchy, e.g.
+    Dialect-specific prompts append the dialect, e.g.
     ``genpact-university-qa-university-sql-generation-sqlite``.
+
+    Domain-only prompts omit the dialect, e.g.
+    ``genpact-university-qa-university-relevance``.
     """
-    return f"{prefix}-{domain}-{kind}-{dialect}"
+    if dialect:
+        return f"{prefix}-{domain}-{kind}-{dialect}"
+    return f"{prefix}-{domain}-{kind}"
 
 
 @dataclass
@@ -50,10 +57,10 @@ class HubPromptLoader:
     def enabled(self) -> bool:
         return self._hub_enabled and bool(os.getenv("LANGSMITH_API_KEY"))
 
-    def prompt_name(self, kind: str, dialect: str) -> str:
+    def prompt_name(self, kind: str, dialect: str | None = None) -> str:
         return hub_prompt_name(self._hub_prefix, self._domain, kind, dialect)
 
-    def pull(self, kind: str, dialect: str) -> ChatPromptTemplate | None:
+    def pull(self, kind: str, dialect: str | None = None) -> ChatPromptTemplate | None:
         if not self.enabled:
             return None
 
@@ -89,9 +96,9 @@ def build_from_hub_or_local(
     *,
     loader: HubPromptLoader | None,
     kind: str,
-    dialect: str,
-    format_kwargs: dict[str, str],
+    format_kwargs: dict[str, str | int],
     local_messages: list[BaseMessage],
+    dialect: str | None = None,
 ) -> PromptBundle:
     if loader is not None and loader.enabled:
         template = loader.pull(kind, dialect)
