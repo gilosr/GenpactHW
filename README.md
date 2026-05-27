@@ -105,6 +105,8 @@ pytest --ignore=tests/evals
 pytest
 ```
 
+Note: `pytest --ignore=tests/evals` is the recommended pre-submit check. Full `pytest` runs LLM evals and requires configured API keys.
+
 ## Demo Script
 
 Run the golden dataset questions through the agent (relevant + off-topic) to see the full pipeline in action:
