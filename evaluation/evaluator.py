@@ -600,6 +600,10 @@ class EvaluationEngine:
         for label in all_labels:
             score_distribution[label] = score_distribution.get(label, 0) + 1
 
+        ex_applicable = [i for i in instances if getattr(i, "execution_accuracy", None) is not None]
+        ex_matches = sum(1 for i in ex_applicable if i.execution_accuracy is True)
+        ex_total = len(ex_applicable)
+
         return {
             "overall_avg_score": round(overall_avg, 2),
             "overall_pass_rate": round(overall_pass_rate, 4),
@@ -612,6 +616,9 @@ class EvaluationEngine:
             "total_latency_s": 0,  # filled by caller
             "min_score": min(all_avg_scores) if all_avg_scores else 0,
             "max_score": max(all_avg_scores) if all_avg_scores else 0,
+            "execution_accuracy": round(ex_matches / ex_total, 4) if ex_total else None,
+            "execution_accuracy_total": ex_total,
+            "execution_accuracy_matches": ex_matches,
         }
 
     # ── Persistence ────────────────────────────────────────────────────────
@@ -665,6 +672,7 @@ class EvaluationEngine:
                 "passed": inst.passed,
                 "latency_ms": inst.latency_ms,
                 "error": inst.error,
+                "execution_accuracy": inst.execution_accuracy,
             })
 
         return {
@@ -700,6 +708,7 @@ class EvaluationEngine:
                 passed=inst_data.get("passed", False),
                 latency_ms=inst_data.get("latency_ms", 0),
                 error=inst_data.get("error"),
+                execution_accuracy=inst_data.get("execution_accuracy"),
             ))
 
         return EvaluationRun(

@@ -476,3 +476,63 @@ class TestExecuteAccuracyIntegration:
             )
 
             assert result.execution_accuracy is True
+
+
+class TestExecutionAccuracyStatistics:
+    def test_statistics_include_execution_accuracy(self, engine):
+        from evaluation.evaluator import InstanceResult, ColumnScore
+        instances = [
+            InstanceResult(
+                row_index=1, input_text="Q1",
+                agent_answer="A1", agent_sql="S1",
+                scores={"col": ColumnScore(column_name="col", score=5, score_label="EXCELLENT",
+                    reasoning="ok", confidence=0.9, expected="e", actual="a")},
+                latency_ms=1000, execution_accuracy=True,
+            ),
+            InstanceResult(
+                row_index=2, input_text="Q2",
+                agent_answer="A2", agent_sql="S2",
+                scores={"col": ColumnScore(column_name="col", score=3, score_label="ACCEPTABLE",
+                    reasoning="ok", confidence=0.7, expected="e", actual="a")},
+                latency_ms=1000, execution_accuracy=False,
+            ),
+            InstanceResult(
+                row_index=3, input_text="Q3",
+                agent_answer="A3", agent_sql="S3",
+                scores={"col": ColumnScore(column_name="col", score=5, score_label="EXCELLENT",
+                    reasoning="ok", confidence=0.9, expected="e", actual="a")},
+                latency_ms=1000, execution_accuracy=None,
+            ),
+        ]
+        run = EvaluationRun(
+            run_id="test-run",
+            dataset_name="Test",
+            input_column="question",
+            eval_columns=["col"],
+        )
+        run.instances = instances
+        stats = engine._compute_statistics(run)
+        assert stats["execution_accuracy"] == 0.5
+        assert stats["execution_accuracy_total"] == 2
+        assert stats["execution_accuracy_matches"] == 1
+
+    def test_statistics_all_skipped_returns_none(self, engine):
+        from evaluation.evaluator import InstanceResult, ColumnScore
+        instances = [
+            InstanceResult(
+                row_index=1, input_text="Q1",
+                agent_answer="A1", agent_sql="S1",
+                scores={"col": ColumnScore(column_name="col", score=5, score_label="EXCELLENT",
+                    reasoning="ok", confidence=0.9, expected="e", actual="a")},
+                latency_ms=1000, execution_accuracy=None,
+            ),
+        ]
+        run = EvaluationRun(
+            run_id="test-run",
+            dataset_name="Test",
+            input_column="question",
+            eval_columns=["col"],
+        )
+        run.instances = instances
+        stats = engine._compute_statistics(run)
+        assert stats["execution_accuracy"] is None
