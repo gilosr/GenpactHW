@@ -1,62 +1,176 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>University QA Trace</title>
-    <link rel="stylesheet" href="/static/styles.css">
-  </head>
-  <body>
-    <main class="shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">LangGraph University QA</p>
-          <h1>University QA Trace</h1>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Obsidian Trace | University QA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1 class="brand-title">Obsidian Trace</h1>
+      <p class="brand-sub">University QA Agent</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item nav-item-active">
+        <span class="material-symbols-outlined nav-icon">sensors</span>
+        Live Tracer
+      </a>
+      <a href="#" class="nav-item">
+        <span class="material-symbols-outlined nav-icon">history</span>
+        Trace History
+      </a>
+      <a href="#" class="nav-item">
+        <span class="material-symbols-outlined nav-icon">health_and_safety</span>
+        System Health
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="deploy-btn">
+        <span class="material-symbols-outlined" style="font-size:16px">rocket_launch</span>
+        DEPLOY AGENT
+      </button>
+      <div class="sidebar-user">
+        <div class="user-avatar">AT</div>
+        <div class="user-info">
+          <p class="user-name">Admin Terminal</p>
+          <p class="user-session">Session: 0x8FA2…12</p>
         </div>
-        <div class="health" id="health">Checking service</div>
-      </header>
+      </div>
+    </div>
+  </aside>
 
-      <section class="query-panel">
-        <form id="ask-form" class="ask-form">
-          <label for="question">Ask a question</label>
-          <div class="input-row">
-            <input id="question" name="question" autocomplete="off" placeholder="How many students are there?">
-            <button type="submit">Run</button>
+  <!-- ── TOPBAR ── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-search-wrap">
+        <span class="material-symbols-outlined topbar-search-icon">search</span>
+        <input class="topbar-search" placeholder="Search traces, nodes, or errors…" type="text" />
+      </div>
+      <nav class="topbar-tabs">
+        <a href="#" class="topbar-tab topbar-tab-active">DASHBOARD</a>
+        <a href="#" class="topbar-tab">LOGS</a>
+        <a href="#" class="topbar-tab">SETTINGS</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div id="health-badge" class="health-badge">Checking…</div>
+      <button id="run-query-btn" class="run-btn">RUN NEW QUERY</button>
+      <div class="topbar-icon-group">
+        <button class="icon-btn"><span class="material-symbols-outlined">notifications</span></button>
+        <button class="icon-btn"><span class="material-symbols-outlined">help_outline</span></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ── -->
+  <main id="main" class="main-scroll">
+    <div class="content-grid">
+
+      <!-- LEFT COLUMN -->
+      <section class="left-col">
+
+        <!-- Query Terminal -->
+        <div class="card">
+          <div class="section-label">
+            <span class="material-symbols-outlined label-icon">terminal</span>
+            AGENT QUERY TERMINAL
           </div>
-        </form>
-        <p class="hint">Live runs use the existing agent. Examples stay available even without LangSmith or provider connectivity.</p>
-      </section>
-
-      <section class="workspace">
-        <aside class="sidebar">
-          <div class="panel">
-            <h2>Examples</h2>
-            <div id="examples" class="example-list"></div>
-          </div>
-          <div class="panel">
-            <h2>Schema</h2>
-            <div id="schema" class="schema-list">Loading schema summary</div>
-          </div>
-        </aside>
-
-        <section class="trace">
-          <div class="answer-panel">
-            <p class="eyebrow">Answer</p>
-            <div id="answer" class="answer">Run a live question or choose an example.</div>
-          </div>
-
-          <div class="metrics" id="metrics"></div>
-
-          <div class="panel">
-            <div class="section-heading">
-              <h2>Execution Timeline</h2>
-              <button id="copy-sql" class="secondary" type="button">Copy SQL</button>
+          <form id="ask-form">
+            <div class="query-wrap">
+              <textarea
+                id="question-input"
+                name="question"
+                class="query-textarea"
+                rows="3"
+                placeholder="Type a university question…"
+              >How many students are enrolled in CS101?</textarea>
+              <div class="query-toolbar">
+                <span class="query-hint">Shift+Enter to execute</span>
+                <button type="submit" class="send-btn">
+                  <span class="material-symbols-outlined">send</span>
+                </button>
+              </div>
             </div>
-            <div id="timeline" class="timeline empty">No trace loaded.</div>
+          </form>
+        </div>
+
+        <!-- Metrics -->
+        <div id="metrics" class="metrics-grid"></div>
+
+        <!-- Answer -->
+        <div id="answer-panel" class="card answer-card" style="display:none">
+          <div class="section-label">
+            <span class="material-symbols-outlined label-icon">chat_bubble</span>
+            AGENT ANSWER
+            <button id="copy-sql-btn" class="copy-sql-link">Copy SQL</button>
           </div>
-        </section>
+          <p id="answer-text" class="answer-text"></p>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card timeline-card">
+          <div class="section-label">
+            <span class="material-symbols-outlined label-icon">account_tree</span>
+            EXECUTION TIMELINE
+          </div>
+          <div class="timeline-wrap">
+            <div class="trace-spine"></div>
+            <div id="timeline" class="timeline-nodes">
+              <p class="timeline-empty">Run a question or load a scenario.</p>
+            </div>
+          </div>
+        </div>
+
       </section>
-    </main>
-    <script src="/static/app.js"></script>
-  </body>
+
+      <!-- RIGHT COLUMN -->
+      <aside class="right-col">
+
+        <!-- Schema Snapshot -->
+        <div class="card">
+          <div class="section-label" style="margin-bottom:14px">
+            <span class="material-symbols-outlined label-icon" style="color:#505f76">monitoring</span>
+            SCHEMA SNAPSHOT
+            <span class="live-chip">LIVE</span>
+          </div>
+          <div id="schema-list" class="schema-list">Loading…</div>
+        </div>
+
+        <!-- Load Scenarios -->
+        <div class="card">
+          <div class="section-label" style="margin-bottom:14px">
+            <span class="material-symbols-outlined label-icon" style="color:#924700">auto_awesome_motion</span>
+            LOAD SCENARIOS
+          </div>
+          <div id="examples" class="scenarios-list"></div>
+        </div>
+
+        <!-- System Health -->
+        <div class="card">
+          <div class="section-label" style="margin-bottom:10px">
+            <span class="material-symbols-outlined label-icon" style="color:#505f76">dns</span>
+            SYSTEM STATUS
+          </div>
+          <div class="health-row">
+            <span class="health-pulse"></span>
+            <span class="health-label">STABLE</span>
+          </div>
+          <p class="health-desc">University DB agent running. LangGraph graph compiled and ready.</p>
+        </div>
+
+      </aside>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
 </html>
