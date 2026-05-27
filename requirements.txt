@@ -1,0 +1,29 @@
+# LangGraph + LangChain core stack
+langgraph>=1.2.0
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
+
+# LLM providers (pick one or more at runtime)
+langchain-openai>=0.3.0
+langchain-anthropic>=0.3.0
+
+# Observability (mandatory for the homework)
+langsmith>=0.3.0
+
+# LangGraph persistence / checkpointing
+langgraph-checkpoint-sqlite>=2.0.0
+
+# Database layer (SQL agent + university schema)
+sqlalchemy>=2.0.0
+
+# Web API
+fastapi>=0.111.0
+uvicorn>=0.30.0
+
+# Config & dev tooling
+python-dotenv>=1.0.0
+pydantic-settings>=2.0.0
+pytest>=8.0.0
+pytest-asyncio>=0.24.0

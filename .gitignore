@@ -1,0 +1,34 @@
+# --- Runtime / build artifacts ---
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+.pytest_cache/
+
+# --- Secrets ---
+.env
+
+# --- IDE / tooling ---
+.claude/
+.cursor/
+.antigravitycli/
+.DS_Store
+
+# --- Internal development files (not for submission) ---
+CLAUDE.md
+AGENT.md
+BUILDING_BLOCKS.md
+HW Task.pdf
+HW-Task-Analysis.md
+golden_dataset.py
+golden_results.csv
+system-diagrams.html
+tracing_demo.html
+
+# --- Internal docs ---
+docs/context/
+docs/code-review.md
+docs/miro-c4-diagram-prompt.md
+docs/prompt-audit-p2.md
+docs/interview-cheatsheet.md
+docs/INTERVIEW-DEFENSE-GUIDE.md

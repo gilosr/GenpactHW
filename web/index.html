@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>University QA Trace</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">LangGraph University QA</p>
+          <h1>University QA Trace</h1>
+        </div>
+        <div class="health" id="health">Checking service</div>
+      </header>
+
+      <section class="query-panel">
+        <form id="ask-form" class="ask-form">
+          <label for="question">Ask a question</label>
+          <div class="input-row">
+            <input id="question" name="question" autocomplete="off" placeholder="How many students are there?">
+            <button type="submit">Run</button>
+          </div>
+        </form>
+        <p class="hint">Live runs use the existing agent. Examples stay available even without LangSmith or provider connectivity.</p>
+      </section>
+
+      <section class="workspace">
+        <aside class="sidebar">
+          <div class="panel">
+            <h2>Examples</h2>
+            <div id="examples" class="example-list"></div>
+          </div>
+          <div class="panel">
+            <h2>Schema</h2>
+            <div id="schema" class="schema-list">Loading schema summary</div>
+          </div>
+        </aside>
+
+        <section class="trace">
+          <div class="answer-panel">
+            <p class="eyebrow">Answer</p>
+            <div id="answer" class="answer">Run a live question or choose an example.</div>
+          </div>
+
+          <div class="metrics" id="metrics"></div>
+
+          <div class="panel">
+            <div class="section-heading">
+              <h2>Execution Timeline</h2>
+              <button id="copy-sql" class="secondary" type="button">Copy SQL</button>
+            </div>
+            <div id="timeline" class="timeline empty">No trace loaded.</div>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
