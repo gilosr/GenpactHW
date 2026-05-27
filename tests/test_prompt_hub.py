@@ -63,7 +63,7 @@ def test_hub_enabled_mock_pull_success(sqlite_pm: PromptManager) -> None:
     ])
     template.metadata = {
         "lc_hub_owner": "org",
-        "lc_hub_repo": "genpact-university-qa/university/sql-generation-sqlite",
+        "lc_hub_repo": "genpact-university-qa-university-sql-generation-sqlite",
         "lc_hub_commit_hash": "abc123",
     }
 
@@ -105,10 +105,10 @@ def test_dialect_routing_resolves_different_hub_prompt_names() -> None:
     )
 
     assert loader.prompt_name("sql-generation", "sqlite") == (
-        "genpact-university-qa/university/sql-generation-sqlite"
+        "genpact-university-qa-university-sql-generation-sqlite"
     )
     assert loader.prompt_name("sql-regeneration", "postgresql") == (
-        "genpact-university-qa/university/sql-regeneration-postgresql"
+        "genpact-university-qa-university-sql-regeneration-postgresql"
     )
 
 

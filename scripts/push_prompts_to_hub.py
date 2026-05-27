@@ -30,6 +30,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from config import settings
 from prompts.domains import get_domain_data
+from prompts.hub import hub_prompt_name
 from prompts.manager import PromptManager, get_dialect_rules
 
 load_dotenv()
@@ -110,7 +111,7 @@ def main() -> int:
             ("sql-generation", generation),
             ("sql-regeneration", regeneration),
         ):
-            prompt_id = f"{args.prefix}/{args.domain}/{kind}-{dialect}"
+            prompt_id = hub_prompt_name(args.prefix, args.domain, kind, dialect)
             commit_url = client.push_prompt(
                 prompt_id,
                 object=template,
