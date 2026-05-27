@@ -51,7 +51,7 @@ class ConversationConfig(BaseModel):
 
 
 class DatabaseConfig(BaseModel):
-    url: str = "sqlite:///university.db"
+    url: str = "sqlite:///db/university.db"
     echo: bool = False
 
     @model_validator(mode="before")

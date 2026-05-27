@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "history.db"
+DB_PATH = PROJECT_ROOT / "db" / "history.db"
 
 
 def get_connection() -> sqlite3.Connection:
