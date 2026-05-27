@@ -24,6 +24,7 @@ import pathlib
 from typing import Optional
 
 from sqlalchemy import Engine, create_engine, event, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
 
 from config import settings
@@ -32,11 +33,18 @@ logger = logging.getLogger(__name__)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 _PROJECT_ROOT = pathlib.Path(__file__).parent.parent
-_DB_PATH = _PROJECT_ROOT / "university.db"
 _SCHEMA_PATH = pathlib.Path(__file__).parent / "schema.sql"
 
 # ── Singleton engine ───────────────────────────────────────────────────────────
 _engine: Optional[Engine] = None
+
+
+def _sqlite_file_path(url: str) -> pathlib.Path | None:
+    """Return the SQLite file path for a SQLAlchemy URL, if it has one."""
+    parsed = make_url(url)
+    if parsed.drivername != "sqlite" or not parsed.database or parsed.database == ":memory:":
+        return None
+    return pathlib.Path(parsed.database)
 
 
 def get_engine(db_path: Optional[str] = None) -> Engine:
@@ -117,8 +125,12 @@ def reset_db(db_path: Optional[str] = None) -> None:
         _engine.dispose()
         _engine = None
 
-    target = pathlib.Path(db_path or _DB_PATH)
-    if target.exists() and target != pathlib.Path(":memory:"):
+    if db_path is not None:
+        target = pathlib.Path(db_path)
+    else:
+        target = _sqlite_file_path(settings.database.url)
+
+    if target is not None and target.exists():
         target.unlink()
 
     init_db(db_path)

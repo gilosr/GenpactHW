@@ -82,11 +82,11 @@ Three UI tabs:
 
 Once the server is running, navigate to `http://localhost:8000/docs` to view the interactive API documentation (Swagger UI).
 
-## Evaluation
+### Evaluation in the Web UI
 
-Run regression checks against the golden dataset via the Evaluation tab or API:
+Run regression checks against the golden dataset directly via the Evaluation tab:
 
-1. Upload [docs/golden_dataset.csv](docs/golden_dataset.csv) (or `POST /api/eval/upload`)
+1. Upload [docs/golden_dataset.csv](docs/golden_dataset.csv)
 2. Map the input column and expected-output columns — SQL columns use execution accuracy; NL columns use the LLM judge
 3. Each row is evaluated via `ConversationManager` + `EvaluationEngine` ([evaluation/evaluator.py](evaluation/evaluator.py))
 4. Scoring combines a 5-level LLM judge rubric with deterministic SQL result comparison ([evaluation/execution_accuracy.py](evaluation/execution_accuracy.py))

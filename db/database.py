@@ -13,13 +13,13 @@ environment variable.
 
 from __future__ import annotations
 
-import os
 import re
 from typing import Any, Optional
 
 from langchain_community.utilities import SQLDatabase
 from sqlalchemy import Engine, text
 
+from config import settings
 from db.connection import get_engine, init_db
 
 
@@ -68,7 +68,7 @@ class DatabaseManager:
         if engine is not None:
             self._engine = engine
         else:
-            conn_str = connection_string or os.getenv("DATABASE_URL")
+            conn_str = connection_string or settings.database.url
             if conn_str:
                 from sqlalchemy import create_engine
                 self._engine = create_engine(conn_str)
