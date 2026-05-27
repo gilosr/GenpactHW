@@ -50,6 +50,7 @@ pip install -r requirements.txt
 # 2. Configure
 cp .env.example .env
 # Edit .env: add OPENAI_API_KEY (or ANTHROPIC_API_KEY) and LANGSMITH_API_KEY
+# Restart the server after changing .env values.
 
 # 3. Seed the database
 python -m db.seed

@@ -42,7 +42,7 @@ body {
   height: 60px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0 24px;
   background: #fff;
   border-bottom: 1px solid #c2c6d6;
@@ -149,6 +149,37 @@ body {
 
 /* ── TOPBAR ──────────────────────────────────────────────── */
 .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+.setup-reminder {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 560px;
+  min-width: 0;
+  padding: 7px 11px;
+  border: 1px solid #ffd3a6;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #723600;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.setup-reminder code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  color: #5f2b00;
+}
+
+.setup-reminder-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: #924700;
+}
 
 .health-badge {
   font-size: 11px;

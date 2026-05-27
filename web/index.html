@@ -105,6 +105,10 @@
 
   <!-- ── TOPBAR ── -->
   <header class="topbar">
+    <div class="setup-reminder" title="LLM calls require an API key in .env">
+      <span class="material-symbols-outlined setup-reminder-icon">key</span>
+      Set <code>OPENAI_API_KEY</code> in <code>.env</code>, then restart the server.
+    </div>
     <div class="topbar-right">
       <div id="health-badge" class="health-badge">Checking…</div>
       <button id="clear-cache-btn" class="clear-cache-btn" type="button" title="Clear in-memory query and schema caches">

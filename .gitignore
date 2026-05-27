@@ -15,18 +15,3 @@ evaluation_runs/
 .antigravitycli/
 .DS_Store
 
-# --- Internal development files (not for submission) ---
-CLAUDE.md
-AGENT.md
-BUILDING_BLOCKS.md
-HW Task.pdf
-HW-Task-Analysis.md
-golden_dataset.py
-golden_results.csv
-system-diagrams.html
-tracing_demo.html
-
-# --- Internal docs (keep only golden_dataset.csv tracked) ---
-docs/*
-!docs/golden_dataset.csv
-docs/context/
