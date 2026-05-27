@@ -256,3 +256,19 @@ class TestJudgePromptContent:
     def test_system_prompt_does_not_contain_generic_phrasing(self):
         from evaluation.evaluator import _JUDGE_SYSTEM_PROMPT
         assert "thorough in your analysis" not in _JUDGE_SYSTEM_PROMPT
+
+
+class TestJudgeUserPromptContent:
+    def test_user_prompt_contains_calibration_examples(self):
+        from evaluation.evaluator import _JUDGE_USER_PROMPT
+        assert "<examples>" in _JUDGE_USER_PROMPT
+        assert "EXCELLENT" in _JUDGE_USER_PROMPT
+        assert "FAIL" in _JUDGE_USER_PROMPT
+
+    def test_rubric_mentions_numeric_accuracy(self):
+        from evaluation.evaluator import _JUDGE_USER_PROMPT
+        assert "number" in _JUDGE_USER_PROMPT.lower() or "numeric" in _JUDGE_USER_PROMPT.lower()
+
+    def test_confidence_field_has_definition(self):
+        from evaluation.evaluator import _JUDGE_USER_PROMPT
+        assert "re-evaluated blind" in _JUDGE_USER_PROMPT or "re-evaluate blind" in _JUDGE_USER_PROMPT

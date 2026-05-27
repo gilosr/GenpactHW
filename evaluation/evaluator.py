@@ -111,32 +111,61 @@ matters — not phrasing. For factual and numeric answers, exact values are requ
 for top scores. Answer length does not affect the score."""
 
 _JUDGE_USER_PROMPT = """\
-## Context
-- **User Input**: {input_text}
-- **Expected Output**: {expected_output}
-- **Actual Output**: {actual_output}
-- **Evaluation Dimension**: {column_name}
+## Task
+- **Question asked**: {input_text}
+- **Reference answer**: {expected_output}
+- **Agent's actual answer**: {actual_output}
+- **Evaluation dimension**: {column_name}
 
 ## Scoring Rubric
-Rate using EXACTLY one of these categories:
-- EXCELLENT (5): Output is fully correct, matches the expected output in meaning and key facts.
-- GOOD (4): Output is mostly correct with minor cosmetic differences that don't affect accuracy.
-- ACCEPTABLE (3): Output captures the core intent but has noticeable gaps or inaccuracies.
-- POOR (2): Output is partially correct but has significant errors or omissions.
-- FAIL (1): Output is incorrect, irrelevant, or contradicts the expected output.
+- EXCELLENT (5): All facts and numbers are correct. Phrasing differences are irrelevant.
+- GOOD (4): Core numeric/factual result is correct; only minor rounding or formatting variation (e.g., 92 vs 92.67).
+- ACCEPTABLE (3): Correct subject/entity but imprecise or incomplete value (e.g., a range instead of an exact count, missing rows).
+- POOR (2): Addresses the question but states a factually wrong value or omits significant facts.
+- FAIL (1): Factually wrong, off-topic, contradicts the reference, or refuses to answer a valid question.
+
+## Calibration Examples
+<examples>
+<example>
+  <question>How many students are enrolled in CS101?</question>
+  <reference>9 students</reference>
+  <actual>CS101 has 9 students enrolled.</actual>
+  <verdict>EXCELLENT — exact number correct; phrasing irrelevant.</verdict>
+</example>
+<example>
+  <question>What is Alice Johnson's average completed grade?</question>
+  <reference>92.67</reference>
+  <actual>Alice Johnson's average is approximately 93.</actual>
+  <verdict>GOOD — rounded from 92.67 to 93; core fact accurate, minor precision loss.</verdict>
+</example>
+<example>
+  <question>How many students are enrolled in CS101?</question>
+  <reference>9 students</reference>
+  <actual>CS101 has between 8 and 10 students.</actual>
+  <verdict>ACCEPTABLE — correct range but no exact value; imprecise for a database COUNT query.</verdict>
+</example>
+<example>
+  <question>How many students are enrolled in CS101?</question>
+  <reference>9 students</reference>
+  <actual>CS101 has about 15 students.</actual>
+  <verdict>FAIL — wrong number (15 vs 9).</verdict>
+</example>
+</examples>
 
 ## Instructions
-1. First, analyse the actual output against the expected output step by step.
-2. Consider semantic equivalence — different wording with the same meaning is still correct.
-3. Then provide your final verdict.
+Step 1. Identify the key fact(s) in the reference answer (numbers, names, entities).
+Step 2. Check whether each key fact appears — exactly or equivalently — in the actual answer.
+Step 3. Assign the score level that best fits.
 
-You MUST respond ONLY with valid JSON in this exact format:
+Respond ONLY with valid JSON:
 {{
-  "reasoning": "Your step-by-step analysis comparing actual vs expected output...",
+  "reasoning": "Step-by-step comparison of key facts...",
   "score_label": "EXCELLENT or GOOD or ACCEPTABLE or POOR or FAIL",
   "score": 5,
-  "confidence": 0.95
-}}"""
+  "confidence": 0.0
+}}
+
+confidence: probability you would assign this exact same score if you re-evaluated blind (0.5 = uncertain, 1.0 = certain)."""
 
 
 # ── Evaluation Engine ──────────────────────────────────────────────────────────
