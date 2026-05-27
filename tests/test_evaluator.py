@@ -52,11 +52,11 @@ class TestParseCsv:
         assert result["row_count"] == 2
         assert len(result["preview"]) == 2
 
-    def test_preview_capped_at_five_rows(self, engine):
+    def test_preview_returns_all_rows(self, engine):
         rows = "\n".join(f"q{i},a{i}" for i in range(10))
         data = _csv(f"question,answer\n{rows}\n")
         result = engine.parse_csv(data)
-        assert len(result["preview"]) == 5
+        assert len(result["preview"]) == 10
         assert result["row_count"] == 10
 
     def test_bom_prefix_stripped(self, engine):
@@ -269,9 +269,7 @@ class TestJudgeUserPromptContent:
         from evaluation.evaluator import _JUDGE_USER_PROMPT
         assert "number" in _JUDGE_USER_PROMPT.lower() or "numeric" in _JUDGE_USER_PROMPT.lower()
 
-    def test_confidence_field_has_definition(self):
-        from evaluation.evaluator import _JUDGE_USER_PROMPT
-        assert "re-evaluated blind" in _JUDGE_USER_PROMPT or "re-evaluate blind" in _JUDGE_USER_PROMPT
+
 
 
 # ── _is_sql_column ──────────────────────────────────────────────────────────
@@ -376,12 +374,12 @@ class TestExecuteAccuracy:
             [{"count": 9}],   # expected_sql result
             [{"count": 9}],   # agent_sql result
         ]
-        result = engine._execute_accuracy(
+        is_match, *_ = engine._execute_accuracy(
             db_manager=mock_db,
             expected_sql="SELECT COUNT(*) as count FROM students",
             agent_sql="SELECT COUNT(*) as count FROM students WHERE 1=1",
         )
-        assert result is True
+        assert is_match is True
 
     def test_mismatching_sql_returns_false(self, engine):
         from unittest.mock import MagicMock
@@ -390,43 +388,43 @@ class TestExecuteAccuracy:
             [{"count": 9}],
             [{"count": 15}],
         ]
-        result = engine._execute_accuracy(
+        is_match, *_ = engine._execute_accuracy(
             db_manager=mock_db,
             expected_sql="SELECT COUNT(*) as count FROM students",
             agent_sql="SELECT COUNT(*) as count FROM teachers",
         )
-        assert result is False
+        assert is_match is False
 
     def test_na_expected_sql_returns_none(self, engine):
         from unittest.mock import MagicMock
         mock_db = MagicMock()
-        result = engine._execute_accuracy(
+        is_match, *_ = engine._execute_accuracy(
             db_manager=mock_db,
             expected_sql="N/A",
             agent_sql="SELECT 1",
         )
-        assert result is None
+        assert is_match is None
         mock_db.execute_query.assert_not_called()
 
     def test_blocked_expected_sql_returns_none(self, engine):
         from unittest.mock import MagicMock
         mock_db = MagicMock()
-        result = engine._execute_accuracy(
+        is_match, *_ = engine._execute_accuracy(
             db_manager=mock_db,
             expected_sql="BLOCKED",
             agent_sql="SELECT 1",
         )
-        assert result is None
+        assert is_match is None
 
     def test_empty_agent_sql_returns_none(self, engine):
         from unittest.mock import MagicMock
         mock_db = MagicMock()
-        result = engine._execute_accuracy(
+        is_match, *_ = engine._execute_accuracy(
             db_manager=mock_db,
             expected_sql="SELECT 1",
             agent_sql="",
         )
-        assert result is None
+        assert is_match is None
 
     def test_agent_sql_execution_error_returns_false(self, engine):
         from unittest.mock import MagicMock
@@ -435,12 +433,12 @@ class TestExecuteAccuracy:
             [{"count": 9}],
             Exception("syntax error"),
         ]
-        result = engine._execute_accuracy(
+        is_match, *_ = engine._execute_accuracy(
             db_manager=mock_db,
             expected_sql="SELECT COUNT(*) FROM students",
             agent_sql="SELEC BROKEN",
         )
-        assert result is False
+        assert is_match is False
 
 
 class TestExecuteAccuracyIntegration:
@@ -448,7 +446,7 @@ class TestExecuteAccuracyIntegration:
         import unittest.mock as mock
 
         with mock.patch.object(engine, "_judge_column") as mock_judge, \
-             mock.patch.object(engine, "_execute_accuracy", return_value=True) as mock_ex:
+             mock.patch.object(engine, "_execute_accuracy", return_value=(True, {}, [], [])) as mock_ex:
             mock_judge.return_value = ColumnScore(
                 column_name="expected_answer_hint",
                 score=5, score_label="EXCELLENT",

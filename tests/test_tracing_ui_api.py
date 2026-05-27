@@ -247,7 +247,7 @@ def test_frontend_renders_metadata_as_labeled_rows():
     app_js = Path("web/app.js").read_text()
 
     assert "Metadata" in app_js
-    assert "Object.entries(metadata" in app_js
+    assert "Object.entries(metadata || {})" in app_js
     assert "kv-list" in app_js
     assert "kv-row" in app_js
     assert "kv-key" in app_js
