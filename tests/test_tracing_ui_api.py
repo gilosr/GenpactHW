@@ -110,8 +110,8 @@ def test_static_frontend_is_served():
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "University QA Trace" in response.text
-    assert "Ask a question" in response.text
+    assert "Obsidian Trace" in response.text
+    assert "Type a university question" in response.text
 
 
 def test_self_healed_example_keeps_failed_and_repaired_sql_distinct():
@@ -179,14 +179,23 @@ def test_frontend_renders_output_section_instead_of_metadata_dict():
     assert "JSON.stringify(node.metadata" not in app_js
 
 
+def test_frontend_sql_output_uses_timeline_step_sql_not_final_trace_sql():
+    from pathlib import Path
+
+    app_js = Path("web/app.js").read_text()
+
+    assert "renderSQL(item.sql || item.output_text || trace.sql_query)" in app_js
+
+
 def test_frontend_renders_metadata_as_labeled_rows():
     from pathlib import Path
 
     app_js = Path("web/app.js").read_text()
 
     assert "Metadata" in app_js
-    assert "metadata-grid" in app_js
-    assert "metadata-label" in app_js
     assert "Object.entries(metadata" in app_js
-    assert "renderMetadata(node.metadata)" in app_js
+    assert "kv-list" in app_js
+    assert "kv-row" in app_js
+    assert "kv-key" in app_js
+    assert "kv-val" in app_js
     assert "JSON.stringify(node.metadata" not in app_js

@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 *.db
 .pytest_cache/
+evaluation_runs/
 
 # --- Secrets ---
 .env

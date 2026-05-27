@@ -78,6 +78,13 @@ class PromptConfig(BaseModel):
     hub_tag: str = "production"
 
 
+class EvalConfig(BaseModel):
+    """Configuration for the LLM-as-a-Judge evaluation pipeline."""
+    judge_model: str = "gpt-4o"
+    judge_temperature: float = 0.0
+    results_dir: str = "evaluation_runs"
+
+
 class Settings(BaseSettings):
     llm: LLMConfig = LLMConfig()
     agent: AgentConfig = AgentConfig()
@@ -86,6 +93,7 @@ class Settings(BaseSettings):
     database: DatabaseConfig = DatabaseConfig()
     api: ApiConfig = ApiConfig()
     prompt: PromptConfig = PromptConfig()
+    eval: EvalConfig = EvalConfig()
 
     @model_validator(mode="after")
     def _apply_flat_database_url(self):

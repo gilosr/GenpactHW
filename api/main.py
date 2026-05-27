@@ -16,11 +16,13 @@ from config import settings
 from agent.conversation_manager import ConversationManager
 from db.database import DatabaseManager
 from tracing.tracer import get_trace_summary, verify_langsmith_config
+from api.eval_routes import router as eval_router
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 WEB_ROOT = PROJECT_ROOT / "web"
 
 app = FastAPI(title=settings.api.title, version=settings.api.version)
+app.include_router(eval_router)
 app.mount("/static", StaticFiles(directory=WEB_ROOT), name="static")
 
 _manager: ConversationManager | None = None
@@ -289,7 +291,65 @@ async def ask(request: Request) -> dict[str, Any]:
             detail=f"Agent invocation failed: {type(exc).__name__}",
         ) from exc
     elapsed_ms = int((time.perf_counter() - start) * 1000)
-    return _response_from_result(question, result, elapsed_ms, thread_id)
+    response_dict = _response_from_result(question, result, elapsed_ms, thread_id)
+    try:
+        from db.history import save_trace
+        save_trace(
+            question=question,
+            answer=response_dict["answer"],
+            sql_query=response_dict["sql_query"],
+            outcome=response_dict["outcome"],
+            latency_ms=response_dict["metrics"]["latency_ms"],
+            trace_data=response_dict,
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to save trace to history: {e}")
+    return response_dict
+
+
+@app.get("/api/history")
+def get_trace_history(
+    page: int = 1,
+    limit: int = 10,
+    search: str = "",
+    outcome: str = "",
+) -> dict[str, Any]:
+    from db.history import get_history, get_history_stats
+    try:
+        traces, total = get_history(page=page, limit=limit, search=search, outcome=outcome)
+        stats = get_history_stats()
+        total_pages = max(1, (total + limit - 1) // limit)
+        return {
+            "traces": traces,
+            "total_count": total,
+            "page": page,
+            "total_pages": total_pages,
+            "stats": stats,
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch trace history: {type(exc).__name__}",
+        ) from exc
+
+
+@app.get("/api/history/{trace_id}")
+def get_trace_history_details(trace_id: int) -> dict[str, Any]:
+    from db.history import get_trace_details
+    try:
+        details = get_trace_details(trace_id)
+        if not details:
+            raise HTTPException(status_code=404, detail=f"Trace with ID {trace_id} not found")
+        return details
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch trace details: {type(exc).__name__}",
+        ) from exc
+
 
 
 def _example_result(question: str, answer: str, sql_query: str, steps: list[str]) -> dict[str, Any]:

@@ -90,6 +90,28 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _push_prompt(
+    client,
+    prompt_id: str,
+    template: ChatPromptTemplate,
+    tag: str,
+) -> None:
+    from langsmith.utils import LangSmithConflictError
+
+    try:
+        commit_url = client.push_prompt(
+            prompt_id,
+            object=template,
+            commit_tags=[tag],
+        )
+        print(f"Pushed {prompt_id} -> {commit_url}")
+    except LangSmithConflictError as exc:
+        if "Nothing to commit" not in str(exc):
+            raise
+        url = client._get_prompt_url(prompt_id)
+        print(f"Unchanged {prompt_id} (already at latest commit) -> {url}")
+
+
 def main() -> int:
     args = _parse_args()
 
@@ -112,12 +134,7 @@ def main() -> int:
             ("sql-regeneration", regeneration),
         ):
             prompt_id = hub_prompt_name(args.prefix, args.domain, kind, dialect)
-            commit_url = client.push_prompt(
-                prompt_id,
-                object=template,
-                tags=[args.tag],
-            )
-            print(f"Pushed {prompt_id} -> {commit_url}")
+            _push_prompt(client, prompt_id, template, args.tag)
 
     print(
         "\nDone. Enable runtime Hub pulls with PROMPT__HUB_ENABLED=true "

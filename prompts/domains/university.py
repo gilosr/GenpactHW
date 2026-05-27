@@ -18,6 +18,9 @@ UNIVERSITY = DomainPromptData(
 
     classification_examples=(
         ClassificationExample("How many students are enrolled in CS101?", "relevant"),
+        ClassificationExample("How many students are there?", "relevant"),
+        ClassificationExample("How many teachers are in the university?", "relevant"),
+        ClassificationExample("List all courses offered by the Mathematics department", "relevant"),
         ClassificationExample("What is the weather like today?", "not_relevant"),
         ClassificationExample("What are Professor Chen's office hours?", "not_relevant"),
     ),
