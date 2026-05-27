@@ -131,6 +131,7 @@ async function evalUploadFile(file) {
     evalState.preview = data.preview;
     evalState.rowCount = data.row_count;
     evalState.selectedIndices = Array.from({ length: data.row_count }, (_, i) => i);
+    evalState.previewAllRows = false;
 
     // Show file info
     E("eval-upload-zone").style.display = "none";
@@ -327,9 +328,10 @@ function evalRenderPreviewTable() {
   });
 
   if (!evalState.previewAllRows && evalState.rowCount > 10) {
+    const hiddenCount = evalState.rowCount - rowsToDisplay.length;
     html += `<tr><td colspan="${cols.length + 2}" style="text-align:center;padding:12px;background:#f8f9fa">
       <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
-        <span style="color:#727785;font-size:11px">Showing first 10 rows. ${evalState.rowCount - 10} more rows hidden.</span>
+        <span style="color:#727785;font-size:11px">Showing first ${rowsToDisplay.length} rows. ${hiddenCount} more rows hidden.</span>
         <button class="eval-filter-btn" style="background:#0058be;color:#fff;border-color:#0058be" onclick="evalShowAllPreview()">Show All Rows</button>
       </div>
     </td></tr>`;
@@ -692,8 +694,28 @@ function evalRenderInstanceDetail(inst, evalCols) {
       <h5 class="eval-detail-title">
         <span class="material-symbols-outlined" style="font-size:16px">database</span>
         Execution Accuracy — ${badge}
-      </h5>
-      <div class="eval-data-compare-grid">
+      </h5>`;
+
+    const diff = inst.execution_accuracy_diff;
+    if (diff && !isOk) {
+      html += `<div class="eval-diff-summary" style="margin-bottom:12px;padding:10px;background:#fff5f5;border:1px solid #feb2b2;border-radius:6px">
+        <p style="font-size:13px;font-weight:700;color:#c53030;margin-bottom:4px">Mismatch Detail: ${esc(diff.message)}</p>
+        ${diff.missing_rows && diff.missing_rows.length ? `
+          <div style="margin-top:8px">
+            <span class="eval-detail-compare-label" style="color:#c53030">Rows missing in actual (showing first ${diff.missing_rows.length}):</span>
+            ${renderMiniTable(diff.missing_rows)}
+          </div>
+        ` : ''}
+        ${diff.extra_rows && diff.extra_rows.length ? `
+          <div style="margin-top:8px">
+            <span class="eval-detail-compare-label" style="color:#c53030">Extra rows in actual (showing first ${diff.extra_rows.length}):</span>
+            ${renderMiniTable(diff.extra_rows)}
+          </div>
+        ` : ''}
+      </div>`;
+    }
+
+    html += `<div class="eval-data-compare-grid">
         <div class="eval-data-pane">
           <span class="eval-detail-compare-label">Expected Data (First 5 rows)</span>
           ${renderMiniTable(inst.expected_data_preview)}

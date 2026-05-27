@@ -14,7 +14,7 @@ FROM students s
 JOIN enrollments e ON s.student_id = e.student_id
 WHERE e.status = 'completed'
 GROUP BY s.major
-ORDER BY avg_grade DESC;","Mathematics ~84.42, Computer Science ~82.56, Physics ~81.14"
+ORDER BY avg_grade DESC;","Computer Science: 85.15, Mathematics: 81.71, Physics: 81.7, English: 74.0"
 8,Tier 2,GROUP BY + COUNT (no join needed),How many courses does each department offer?,"SELECT department, COUNT(*) AS course_count
 FROM courses
 GROUP BY department

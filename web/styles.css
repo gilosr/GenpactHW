@@ -42,7 +42,7 @@ body {
   height: 60px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 0 24px;
   background: #fff;
   border-bottom: 1px solid #c2c6d6;
@@ -123,28 +123,6 @@ body {
   margin-top: auto;
 }
 
-.deploy-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 11px;
-  background: #0058be;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: filter 0.12s, transform 0.1s;
-  margin-bottom: 14px;
-}
-.deploy-btn:hover { filter: brightness(1.12); }
-.deploy-btn:active { transform: scale(0.97); }
-
 .sidebar-user {
   display: flex;
   align-items: center;
@@ -170,50 +148,7 @@ body {
 .user-session { font-size: 10px; color: #727785; margin: 0; }
 
 /* ── TOPBAR ──────────────────────────────────────────────── */
-.topbar-left  { display: flex; align-items: center; gap: 20px; }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
-
-.topbar-search-wrap {
-  position: relative;
-  width: 340px;
-}
-
-.topbar-search-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 17px;
-  color: #727785;
-}
-
-.topbar-search {
-  width: 100%;
-  background: #f3f4f5;
-  border: 1px solid #c2c6d6;
-  border-radius: 8px;
-  padding: 7px 10px 7px 34px;
-  font-size: 13px;
-  color: #191c1d;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.topbar-search:focus { border-color: #0058be; }
-
-.topbar-tabs { display: flex; gap: 20px; }
-
-.topbar-tab {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  color: #727785;
-  text-decoration: none;
-  padding: 4px 0;
-  transition: color 0.15s;
-}
-.topbar-tab:hover { color: #191c1d; }
-.topbar-tab-active { color: #0058be; border-bottom: 2px solid #0058be; }
 
 .health-badge {
   font-size: 11px;
@@ -258,25 +193,6 @@ body {
 }
 .clear-cache-btn:hover { background: #f7f8fa; border-color: #9aa3b8; color: #191c1d; }
 .clear-cache-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-.topbar-icon-group {
-  display: flex;
-  border-left: 1px solid #e7e8e9;
-  padding-left: 10px;
-}
-
-.icon-btn {
-  padding: 7px;
-  background: transparent;
-  border: none;
-  color: #727785;
-  cursor: pointer;
-  border-radius: 7px;
-  transition: color 0.12s, background 0.12s;
-  display: flex;
-}
-.icon-btn:hover { color: #191c1d; background: #f3f4f5; }
-.icon-btn .material-symbols-outlined { font-size: 21px; }
 
 /* ── CARDS ───────────────────────────────────────────────── */
 .card {
@@ -337,16 +253,10 @@ body {
 .query-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 8px 12px;
   background: #f8f9fa;
   border-top: 1px solid #edeeef;
-}
-
-.query-hint {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: #9ba0ad;
 }
 
 .send-btn {

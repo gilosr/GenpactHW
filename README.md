@@ -4,50 +4,38 @@ A natural language question-answering system over a university database, built w
 
 ## Architecture
 
-The system has three layers: a **9-node LangGraph pipeline** that converts natural language to SQL and back to an answer; an **LRU query cache** at the entry point for standalone questions; and **centralized prompt management** that feeds all LLM nodes via domain templates with optional LangSmith Hub fallback.
+The agent is a 9-node LangGraph pipeline that converts natural language questions into SQL, executes them, and formats the results. It includes a retry cycle for failed queries and graceful handling of off-topic questions.
+
+Simple cache mechanism before the graph starts:
 
 ```mermaid
----
-config:
-  flowchart:
-    curve: linear
----
-graph TD
-    User([User]) --> CM[ConversationManager]
-    CM --> CacheCheck{QueryCache}
-    CacheCheck -- hit --> CachedAnswer([Cached Answer])
-    CacheCheck -- miss --> START
+flowchart TD
+    Q[User question] --> M{QueryCache lookup}
+    M -->|Cache hit| R[Return cached answer]
+    M -->|Cache miss| A((START))
 
-    subgraph LangGraphPipeline [LangGraph Pipeline]
-        START((__start__)) --> check_relevance
-        check_relevance -- not_relevant --> polite_decline --> END((__end__))
-        check_relevance -- relevant --> fetch_schema
-        fetch_schema --> generate_sql
-        generate_sql --> validate_sql
-        validate_sql -- destructive_or_empty --> error_response --> END
-        validate_sql -- safe --> execute_sql
-        execute_sql -- success --> format_answer --> END
-        execute_sql -- retry_budget --> regenerate_sql --> generate_sql
-        execute_sql -- no_retries --> error_response
-    end
+    A --> B[check_relevance]
 
-    subgraph PromptManagement [Prompt Management]
-        PM[PromptManager]
-        Domain[prompts/domains/university.py]
-        Hub[LangSmith Hub optional]
-        Domain --> PM
-        Hub -.-> PM
-    end
+    B -->|Not relevant| C[polite_decline]
+    C --> Z([END])
 
-    PM -.-> check_relevance
-    PM -.-> polite_decline
-    PM -.-> generate_sql
-    PM -.-> regenerate_sql
-    PM -.-> format_answer
+    B -->|Relevant| D[fetch_schema]
+    D --> E[generate_sql]
+    E --> F[validate_sql]
 
-    classDef default fill:#f2f0ff,line-height:1.2
-    classDef first fill-opacity:0
-    classDef last fill:#bfb6fc
+    F -->|Destructive SQL| G[error_response]
+    G --> Z
+
+    F -->|Safe SQL| H[execute_sql]
+    H --> I{route_result}
+
+    I -->|Success| J[format_answer]
+    J --> Z
+
+    I -->|Failure + retries left| K[regenerate_sql]
+    K --> E
+
+    I -->|Failure + no retries| G
 ```
 
 ## Quick Start

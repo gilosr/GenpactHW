@@ -88,6 +88,7 @@ class InstanceResult:
     latency_ms: int = 0
     error: str | None = None
     execution_accuracy: bool | None = None
+    execution_accuracy_diff: dict[str, Any] | None = None
     expected_data_preview: list[dict] | None = None
     actual_data_preview: list[dict] | None = None
 
@@ -206,14 +207,14 @@ class EvaluationEngine:
         db_manager,
         expected_sql: str,
         agent_sql: str,
-    ) -> tuple[bool | None, list[dict] | None, list[dict] | None]:
+    ) -> tuple[bool | None, dict[str, Any] | None, list[dict] | None, list[dict] | None]:
         """Execute both SQLs and compare result sets. 
         
         Returns:
-            (is_match, expected_rows_preview, actual_rows_preview)
+            (is_match, diff_details, expected_rows_preview, actual_rows_preview)
         """
         if expected_sql.strip().lower() in _SKIP_SQL_VALUES or not agent_sql.strip():
-            return None, None, None
+            return None, None, None, None
         
         expected_results = None
         actual_results = None
@@ -221,15 +222,16 @@ class EvaluationEngine:
         try:
             expected_results = db_manager.execute_query(expected_sql)
         except Exception:
-            return None, None, None  # bad reference SQL = skip, not penalize
+            return None, None, None, None  # bad reference SQL = skip, not penalize
         
         try:
             actual_results = db_manager.execute_query(agent_sql)
         except Exception:
-            return False, expected_results[:5] if expected_results else [], []  # agent SQL crashed = fail
+            # agent SQL crashed = fail
+            return False, {"is_match": False, "message": "Agent SQL execution failed"}, expected_results[:5] if expected_results else [], []
         
-        is_match = compare_result_sets(expected_results, actual_results)
-        return is_match, expected_results[:5], actual_results[:5]
+        diff = compare_result_sets(expected_results, actual_results)
+        return diff["is_match"], diff, expected_results[:5] if expected_results else [], actual_results[:5] if actual_results else []
 
     # ── CSV handling ───────────────────────────────────────────────────────
 
@@ -467,13 +469,14 @@ class EvaluationEngine:
         # 4. Execution accuracy (deterministic, no LLM)
         expected_sql = row.get("expected_sql", "").strip()
         ex_result = None
+        ex_diff = None
         ex_expected = None
         ex_actual = None
 
         if expected_sql:
             from agent.nodes import _get_db
             db_manager = getattr(manager, "_db_manager", None) or _get_db()
-            ex_result, ex_expected, ex_actual = self._execute_accuracy(
+            ex_result, ex_diff, ex_expected, ex_actual = self._execute_accuracy(
                 db_manager=db_manager,
                 expected_sql=expected_sql,
                 agent_sql=agent_sql,
@@ -489,6 +492,7 @@ class EvaluationEngine:
             passed=passed,
             latency_ms=elapsed_ms,
             execution_accuracy=ex_result,
+            execution_accuracy_diff=ex_diff,
             expected_data_preview=ex_expected,
             actual_data_preview=ex_actual,
         )
@@ -709,6 +713,7 @@ class EvaluationEngine:
                 "latency_ms": inst.latency_ms,
                 "error": inst.error,
                 "execution_accuracy": inst.execution_accuracy,
+                "execution_accuracy_diff": inst.execution_accuracy_diff,
                 "expected_data_preview": inst.expected_data_preview,
                 "actual_data_preview": inst.actual_data_preview,
             })
@@ -747,6 +752,7 @@ class EvaluationEngine:
                 latency_ms=inst_data.get("latency_ms", 0),
                 error=inst_data.get("error"),
                 execution_accuracy=inst_data.get("execution_accuracy"),
+                execution_accuracy_diff=inst_data.get("execution_accuracy_diff"),
                 expected_data_preview=inst_data.get("expected_data_preview"),
                 actual_data_preview=inst_data.get("actual_data_preview"),
             ))

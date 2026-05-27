@@ -90,17 +90,9 @@
         <span class="material-symbols-outlined nav-icon">history</span>
         Trace History
       </a>
-      <a href="#" class="nav-item">
-        <span class="material-symbols-outlined nav-icon">health_and_safety</span>
-        System Health
-      </a>
     </nav>
 
     <div class="sidebar-footer">
-      <button class="deploy-btn">
-        <span class="material-symbols-outlined" style="font-size:16px">rocket_launch</span>
-        DEPLOY AGENT
-      </button>
       <div class="sidebar-user">
         <div class="user-avatar">AT</div>
         <div class="user-info">
@@ -113,17 +105,6 @@
 
   <!-- ── TOPBAR ── -->
   <header class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-search-wrap">
-        <span class="material-symbols-outlined topbar-search-icon">search</span>
-        <input class="topbar-search" placeholder="Search traces, nodes, or errors…" type="text" />
-      </div>
-      <nav class="topbar-tabs">
-        <a href="#" class="topbar-tab topbar-tab-active">DASHBOARD</a>
-        <a href="#" class="topbar-tab">LOGS</a>
-        <a href="#" class="topbar-tab">SETTINGS</a>
-      </nav>
-    </div>
     <div class="topbar-right">
       <div id="health-badge" class="health-badge">Checking…</div>
       <button id="clear-cache-btn" class="clear-cache-btn" type="button" title="Clear in-memory query and schema caches">
@@ -131,10 +112,6 @@
         CLEAR CACHE
       </button>
       <button id="run-query-btn" class="run-btn">RUN NEW QUERY</button>
-      <div class="topbar-icon-group">
-        <button class="icon-btn"><span class="material-symbols-outlined">notifications</span></button>
-        <button class="icon-btn"><span class="material-symbols-outlined">help_outline</span></button>
-      </div>
     </div>
   </header>
 
@@ -161,7 +138,6 @@
                 placeholder="Type a university question…"
               >How many students are enrolled in CS101?</textarea>
               <div class="query-toolbar">
-                <span class="query-hint">Shift+Enter to execute</span>
                 <button type="submit" class="send-btn">
                   <span class="material-symbols-outlined">send</span>
                 </button>
