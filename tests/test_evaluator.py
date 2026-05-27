@@ -272,3 +272,97 @@ class TestJudgeUserPromptContent:
     def test_confidence_field_has_definition(self):
         from evaluation.evaluator import _JUDGE_USER_PROMPT
         assert "re-evaluated blind" in _JUDGE_USER_PROMPT or "re-evaluate blind" in _JUDGE_USER_PROMPT
+
+
+# ── _is_sql_column ──────────────────────────────────────────────────────────
+
+
+from evaluation.evaluator import _is_sql_column
+
+
+class TestIsSqlColumn:
+    def test_expected_sql_is_sql_column(self):
+        assert _is_sql_column("expected_sql") is True
+
+    def test_sql_query_is_sql_column(self):
+        assert _is_sql_column("sql_query") is True
+
+    def test_expected_answer_hint_is_not_sql_column(self):
+        assert _is_sql_column("expected_answer_hint") is False
+
+    def test_answer_is_not_sql_column(self):
+        assert _is_sql_column("answer") is False
+
+    def test_select_query_is_sql_column(self):
+        assert _is_sql_column("select_query") is True
+
+
+# ── Column-type dispatch ────────────────────────────────────────────────────
+
+
+class TestColumnTypeDispatch:
+    def test_sql_column_uses_agent_sql_as_actual(self, engine):
+        """When eval column looks like SQL, _judge_column receives agent_sql, not agent_answer."""
+        import unittest.mock as mock
+
+        with mock.patch.object(engine, "_judge_column") as mock_judge:
+            mock_judge.return_value = ColumnScore(
+                column_name="expected_sql",
+                score=5,
+                score_label="EXCELLENT",
+                reasoning="ok",
+                confidence=0.9,
+                expected="SELECT 1",
+                actual="SELECT 1",
+            )
+
+            mock_manager = mock.MagicMock()
+            mock_manager.create_session.return_value = "t1"
+            mock_manager.ask.return_value = {
+                "answer": "There is 1 teacher.",
+                "sql_query": "SELECT COUNT(*) FROM teachers",
+            }
+
+            engine._evaluate_instance(
+                manager=mock_manager,
+                row={"question": "How many?", "expected_sql": "SELECT COUNT(*) FROM teachers"},
+                row_index=1,
+                input_column="question",
+                eval_columns=["expected_sql"],
+            )
+
+            call_kwargs = mock_judge.call_args
+            assert call_kwargs.kwargs["actual_output"] == "SELECT COUNT(*) FROM teachers"
+
+    def test_answer_column_uses_agent_answer_as_actual(self, engine):
+        """When eval column looks like NL, _judge_column receives agent_answer."""
+        import unittest.mock as mock
+
+        with mock.patch.object(engine, "_judge_column") as mock_judge:
+            mock_judge.return_value = ColumnScore(
+                column_name="expected_answer_hint",
+                score=5,
+                score_label="EXCELLENT",
+                reasoning="ok",
+                confidence=0.9,
+                expected="6 teachers",
+                actual="6 teachers",
+            )
+
+            mock_manager = mock.MagicMock()
+            mock_manager.create_session.return_value = "t1"
+            mock_manager.ask.return_value = {
+                "answer": "There are 6 teachers.",
+                "sql_query": "SELECT COUNT(*) FROM teachers",
+            }
+
+            engine._evaluate_instance(
+                manager=mock_manager,
+                row={"question": "How many?", "expected_answer_hint": "6 teachers"},
+                row_index=1,
+                input_column="question",
+                eval_columns=["expected_answer_hint"],
+            )
+
+            call_kwargs = mock_judge.call_args
+            assert call_kwargs.kwargs["actual_output"] == "There are 6 teachers."

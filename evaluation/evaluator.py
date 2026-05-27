@@ -45,6 +45,14 @@ SCORE_LABELS = {
     "FAIL": 1,
 }
 
+_SQL_COLUMN_KEYWORDS = frozenset({"sql", "query", "select"})
+
+
+def _is_sql_column(column_name: str) -> bool:
+    """Heuristic: does this column name suggest it contains SQL?"""
+    name_lower = column_name.lower().replace("_", " ").replace("-", " ")
+    return any(kw in name_lower for kw in _SQL_COLUMN_KEYWORDS)
+
 
 # ── Data models ────────────────────────────────────────────────────────────────
 
@@ -379,9 +387,10 @@ class EvaluationEngine:
         scores: dict[str, ColumnScore] = {}
         for col in eval_columns:
             expected = row.get(col, "").strip()
+            actual = agent_sql if _is_sql_column(col) else agent_answer
             col_score = self._judge_column(
                 input_text=input_text,
-                actual_output=agent_answer,
+                actual_output=actual,
                 expected_output=expected,
                 column_name=col,
             )
