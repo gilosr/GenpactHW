@@ -71,8 +71,8 @@ print(result['answer'])
 Start the trace UI (requires seeded DB + API keys in `.env`):
 
 ```bash
-uvicorn api.main:app --reload --port 8000
-# Open http://localhost:8000
+uvicorn api.main:app --reload --port 8765
+# Open http://localhost:8765
 ```
 
 Three UI tabs:
@@ -81,7 +81,7 @@ Three UI tabs:
 - **Evaluation** — CSV upload, column mapping, LLM-as-judge runs
 - **Trace History** — browse/search persisted past runs
 
-Once the server is running, navigate to `http://localhost:8000/docs` to view the interactive API documentation (Swagger UI).
+Once the server is running, navigate to `http://localhost:8765/docs` to view the interactive API documentation (Swagger UI).
 
 ### Evaluation in the Web UI
 
