@@ -1,6 +1,6 @@
 # University Database QA Agent
 
-A natural language question-answering system over a university database, built with LangGraph. Ask questions in plain English and get accurate answers powered by SQL and an LLM.
+A natural language question-answering system over a university database, built with LangGraph. Ask questions in plain English and get answers powered by SQL and an LLM.
 
 ## Architecture
 
