@@ -9,6 +9,7 @@ const evalState = {
   rowCount: 0,
   inputColumn: null,
   evalColumns: [],
+  selectedIndices: [],
   currentRunId: null,
   results: null,
   pollTimer: null,
@@ -21,6 +22,21 @@ function esc(v) {
   return String(v ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function renderMarkdown(text) {
+  if (!text) return "—";
+  
+  // If the text has "Step 1: ... Step 2: ..." without newlines, add them
+  let processedText = text;
+  if (!text.includes('\n') && /Step \d+:/.test(text)) {
+    processedText = text.replace(/(Step \d+:)/g, '\n$1').trim();
+  }
+
+  if (window.marked && window.marked.parse) {
+    return marked.parse(processedText, { breaks: true });
+  }
+  return `<p>${esc(processedText).replace(/\n/g, '<br>')}</p>`;
 }
 
 // ── Navigation ────────────────────────────────────────────
@@ -113,6 +129,7 @@ async function evalUploadFile(file) {
     evalState.columns = data.columns;
     evalState.preview = data.preview;
     evalState.rowCount = data.row_count;
+    evalState.selectedIndices = Array.from({ length: data.row_count }, (_, i) => i);
 
     // Show file info
     E("eval-upload-zone").style.display = "none";
@@ -142,6 +159,7 @@ function evalClearFile() {
   evalState.preview = [];
   evalState.inputColumn = null;
   evalState.evalColumns = [];
+  evalState.selectedIndices = [];
 
   const zone = E("eval-upload-zone");
   zone.style.display = "";
@@ -177,6 +195,39 @@ function evalBackToMapper() {
 }
 
 // ── Column Mapper ─────────────────────────────────────────
+
+function evalToggleRowSelection(idx) {
+  const i = evalState.selectedIndices.indexOf(idx);
+  if (i > -1) {
+    evalState.selectedIndices.splice(i, 1);
+  } else {
+    evalState.selectedIndices.push(idx);
+  }
+  evalUpdateSelectionCount();
+}
+
+function evalToggleAllSelection(checked) {
+  if (checked) {
+    evalState.selectedIndices = Array.from({ length: evalState.rowCount }, (_, i) => i);
+  } else {
+    evalState.selectedIndices = [];
+  }
+  evalRenderPreviewTable();
+  evalUpdateSelectionCount();
+}
+
+function evalUpdateSelectionCount() {
+  const count = evalState.selectedIndices.length;
+  const el = E("eval-selection-count");
+  if (el) {
+    el.textContent = `${count} rows selected`;
+    el.style.color = count === 0 ? "#dc2626" : "#16a34a";
+  }
+  const btn = E("eval-start-btn");
+  if (btn) {
+    btn.disabled = !evalState.inputColumn || evalState.evalColumns.length === 0 || count === 0;
+  }
+}
 
 function evalRenderColumnMapper() {
   const inputContainer = E("eval-input-cols");
@@ -220,6 +271,7 @@ function evalOnColumnChange() {
 
   // Highlight columns in preview
   evalRenderPreviewTable();
+  evalUpdateSelectionCount();
 }
 
 function evalRenderPreviewTable() {
@@ -233,7 +285,12 @@ function evalRenderPreviewTable() {
   const isInput = (c) => c === evalState.inputColumn;
   const isEval = (c) => evalState.evalColumns.includes(c);
 
+  const allSelected = evalState.selectedIndices.length === evalState.rowCount;
+  const noneSelected = evalState.selectedIndices.length === 0;
+
   let html = "<thead><tr>";
+  html += `<th style="width:40px;text-align:center"><input type="checkbox" ${allSelected ? 'checked' : ''} onchange="evalToggleAllSelection(this.checked)" /></th>`;
+  html += "<th>#</th>";
   html += cols.map(c => {
     let cls = "";
     if (isInput(c)) cls = "eval-col-highlight-input";
@@ -242,8 +299,11 @@ function evalRenderPreviewTable() {
   }).join("");
   html += "</tr></thead><tbody>";
 
-  evalState.preview.slice(0, 5).forEach(row => {
-    html += "<tr>";
+  evalState.preview.slice(0, 10).forEach((row, idx) => {
+    const isRowSelected = evalState.selectedIndices.includes(idx);
+    html += `<tr style="${isRowSelected ? '' : 'opacity:0.5;background:#f9fafb'}">`;
+    html += `<td style="text-align:center"><input type="checkbox" ${isRowSelected ? 'checked' : ''} onchange="evalToggleRowSelection(${idx})" /></td>`;
+    html += `<td style="color:#9ba0ad;font-family:'JetBrains Mono';font-size:11px">${idx + 1}</td>`;
     html += cols.map(c => {
       let cls = "";
       if (isInput(c)) cls = "eval-col-highlight-input";
@@ -253,6 +313,12 @@ function evalRenderPreviewTable() {
     }).join("");
     html += "</tr>";
   });
+
+  if (evalState.rowCount > 10) {
+    html += `<tr><td colspan="${cols.length + 2}" style="text-align:center;padding:10px;color:#727785;font-size:11px;background:#f8f9fa">
+      Showing first 10 rows. ${evalState.rowCount - 10} more rows hidden.
+    </td></tr>`;
+  }
 
   html += "</tbody>";
   table.innerHTML = html;
@@ -277,6 +343,7 @@ async function evalStartRun() {
         session_id: evalState.sessionId,
         input_column: evalState.inputColumn,
         eval_columns: evalState.evalColumns,
+        selected_indices: evalState.selectedIndices,
         dataset_name: E("eval-dataset-name").value || "Evaluation Run",
       }),
     });
@@ -568,7 +635,7 @@ function evalRenderInstanceDetail(inst, evalCols) {
   // Agent output
   html += `<div class="eval-detail-section">
     <h5 class="eval-detail-title"><span class="material-symbols-outlined" style="font-size:16px">smart_toy</span> Agent Output</h5>
-    <p class="eval-detail-text">${esc(inst.agent_answer || "—")}</p>
+    <div class="eval-markdown-body">${renderMarkdown(inst.agent_answer || "—")}</div>
     ${inst.agent_sql ? `<pre class="eval-detail-sql">${esc(inst.agent_sql)}</pre>` : ""}
   </div>`;
 
@@ -594,13 +661,51 @@ function evalRenderInstanceDetail(inst, evalCols) {
       </div>
       <div class="eval-detail-reasoning">
         <span class="eval-detail-compare-label">Judge Reasoning</span>
-        <p>${esc(cs.reasoning || "—")}</p>
+        <div class="eval-markdown-body">${renderMarkdown(cs.reasoning || "—")}</div>
       </div>
     </div>`;
   });
 
+  // Execution accuracy side-by-side data comparison
+  if (inst.execution_accuracy !== null && inst.execution_accuracy !== undefined) {
+    const isOk = inst.execution_accuracy;
+    const badge = isOk 
+      ? '<span class="eval-pass-badge">✓ MATCH</span>' 
+      : '<span class="eval-fail-badge">✗ MISMATCH</span>';
+    
+    html += `<div class="eval-detail-section">
+      <h5 class="eval-detail-title">
+        <span class="material-symbols-outlined" style="font-size:16px">database</span>
+        Execution Accuracy — ${badge}
+      </h5>
+      <div class="eval-data-compare-grid">
+        <div class="eval-data-pane">
+          <span class="eval-detail-compare-label">Expected Data (First 5 rows)</span>
+          ${renderMiniTable(inst.expected_data_preview)}
+        </div>
+        <div class="eval-data-pane">
+          <span class="eval-detail-compare-label">Actual Data (First 5 rows)</span>
+          ${renderMiniTable(inst.actual_data_preview)}
+        </div>
+      </div>
+    </div>`;
+  }
+
   html += "</div>";
   return html;
+}
+
+function renderMiniTable(rows) {
+  if (!rows || !rows.length) return '<div class="eval-data-empty">No results or empty set</div>';
+  const keys = Object.keys(rows[0]);
+  let h = '<div class="eval-mini-table-wrap"><table class="eval-mini-table"><thead><tr>';
+  h += keys.map(k => `<th>${esc(k)}</th>`).join("");
+  h += "</tr></thead><tbody>";
+  rows.forEach(row => {
+    h += "<tr>" + keys.map(k => `<td>${esc(row[k])}</td>`).join("") + "</tr>";
+  });
+  h += "</tbody></table></div>";
+  return h;
 }
 
 function evalToggleDetail(idx) {

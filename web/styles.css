@@ -243,6 +243,22 @@ body {
 }
 .run-btn:hover { background: #dce8ff; border-color: #adc6ff; }
 
+.clear-cache-btn {
+  background: #fff;
+  color: #424754;
+  border: 1px solid #c2c6d6;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.clear-cache-btn:hover { background: #f7f8fa; border-color: #9aa3b8; color: #191c1d; }
+.clear-cache-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
 .topbar-icon-group {
   display: flex;
   border-left: 1px solid #e7e8e9;
@@ -1715,8 +1731,7 @@ body {
 }
 
 .eval-detail-expected p,
-.eval-detail-actual p,
-.eval-detail-reasoning p {
+.eval-detail-actual p {
   margin: 0;
   color: #505f76;
 }
@@ -1755,11 +1770,104 @@ body {
   color: #191c1d;
 }
 
-.eval-detail-reasoning {
-  padding: 10px;
-  background: #f7f8fa;
-  border-radius: 6px;
+/* ── Data Comparison ─────────────────────────────────────────── */
+
+.eval-data-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.eval-data-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.eval-mini-table-wrap {
+  overflow-x: auto;
   border: 1px solid #e0e2e6;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.eval-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.eval-mini-table th {
+  background: #f8f9fa;
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid #e0e2e6;
+  font-weight: 700;
+  color: #505f76;
+}
+
+.eval-mini-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f1f3;
+  color: #191c1d;
+  white-space: nowrap;
+}
+
+.eval-data-empty {
+  font-size: 12px;
+  color: #9ba0ad;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.eval-detail-reasoning {
+  padding: 16px 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+
+.eval-markdown-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.eval-markdown-body p {
+  margin-bottom: 12px;
+}
+
+.eval-markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.eval-markdown-body strong {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.eval-markdown-body ul, 
+.eval-markdown-body ol {
+  margin-bottom: 12px;
+  padding-left: 24px;
+}
+
+.eval-markdown-body li {
+  margin-bottom: 4px;
+}
+
+.eval-markdown-body code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: #f1f5f9;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #0f172a;
 }
 
 /* ── History Bar ───────────────────────────────────────────────── */
