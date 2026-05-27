@@ -366,3 +366,79 @@ class TestColumnTypeDispatch:
 
             call_kwargs = mock_judge.call_args
             assert call_kwargs.kwargs["actual_output"] == "There are 6 teachers."
+
+
+class TestExecuteAccuracy:
+    def test_matching_sql_returns_true(self, engine):
+        from unittest.mock import MagicMock
+        mock_db = MagicMock()
+        mock_db.execute_query.side_effect = [
+            [{"count": 9}],   # expected_sql result
+            [{"count": 9}],   # agent_sql result
+        ]
+        result = engine._execute_accuracy(
+            db_manager=mock_db,
+            expected_sql="SELECT COUNT(*) as count FROM students",
+            agent_sql="SELECT COUNT(*) as count FROM students WHERE 1=1",
+        )
+        assert result is True
+
+    def test_mismatching_sql_returns_false(self, engine):
+        from unittest.mock import MagicMock
+        mock_db = MagicMock()
+        mock_db.execute_query.side_effect = [
+            [{"count": 9}],
+            [{"count": 15}],
+        ]
+        result = engine._execute_accuracy(
+            db_manager=mock_db,
+            expected_sql="SELECT COUNT(*) as count FROM students",
+            agent_sql="SELECT COUNT(*) as count FROM teachers",
+        )
+        assert result is False
+
+    def test_na_expected_sql_returns_none(self, engine):
+        from unittest.mock import MagicMock
+        mock_db = MagicMock()
+        result = engine._execute_accuracy(
+            db_manager=mock_db,
+            expected_sql="N/A",
+            agent_sql="SELECT 1",
+        )
+        assert result is None
+        mock_db.execute_query.assert_not_called()
+
+    def test_blocked_expected_sql_returns_none(self, engine):
+        from unittest.mock import MagicMock
+        mock_db = MagicMock()
+        result = engine._execute_accuracy(
+            db_manager=mock_db,
+            expected_sql="BLOCKED",
+            agent_sql="SELECT 1",
+        )
+        assert result is None
+
+    def test_empty_agent_sql_returns_none(self, engine):
+        from unittest.mock import MagicMock
+        mock_db = MagicMock()
+        result = engine._execute_accuracy(
+            db_manager=mock_db,
+            expected_sql="SELECT 1",
+            agent_sql="",
+        )
+        assert result is None
+
+    def test_agent_sql_execution_error_returns_false(self, engine):
+        from unittest.mock import MagicMock
+        mock_db = MagicMock()
+        mock_db.execute_query.side_effect = [
+            [{"count": 9}],
+            Exception("syntax error"),
+        ]
+        result = engine._execute_accuracy(
+            db_manager=mock_db,
+            expected_sql="SELECT COUNT(*) FROM students",
+            agent_sql="SELEC BROKEN",
+        )
+        assert result is False
+

@@ -35,6 +35,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 logger = logging.getLogger(__name__)
 
+from evaluation.execution_accuracy import compare_result_sets
+
 # ── Score labels and their numeric values ──────────────────────────────────────
 
 SCORE_LABELS = {
@@ -46,6 +48,8 @@ SCORE_LABELS = {
 }
 
 _SQL_COLUMN_KEYWORDS = frozenset({"sql", "query", "select"})
+_SKIP_SQL_VALUES = frozenset({"n/a", "blocked", ""})
+
 
 
 def _is_sql_column(column_name: str) -> bool:
@@ -200,6 +204,25 @@ class EvaluationEngine:
         self._results_dir.mkdir(exist_ok=True)
         self._load_persisted_runs()
 
+    def _execute_accuracy(
+        self,
+        db_manager,
+        expected_sql: str,
+        agent_sql: str,
+    ) -> bool | None:
+        """Execute both SQLs and compare result sets. Returns None if not applicable."""
+        if expected_sql.strip().lower() in _SKIP_SQL_VALUES or not agent_sql.strip():
+            return None
+        try:
+            expected_results = db_manager.execute_query(expected_sql)
+        except Exception:
+            return None  # bad reference SQL = skip, not penalize
+        try:
+            actual_results = db_manager.execute_query(agent_sql)
+        except Exception:
+            return False  # agent SQL crashed = fail
+        return compare_result_sets(expected_results, actual_results)
+
     # ── CSV handling ───────────────────────────────────────────────────────
 
     def parse_csv(self, file_bytes: bytes, filename: str = "upload.csv") -> dict[str, Any]:
@@ -311,6 +334,7 @@ class EvaluationEngine:
                 "status": run.status,
                 "created_at": run.created_at,
                 "total_instances": run.progress_total,
+                "progress_current": run.progress_current,
                 "overall_avg_score": run.statistics.get("overall_avg_score", 0),
                 "overall_pass_rate": run.statistics.get("overall_pass_rate", 0),
             })
@@ -342,6 +366,10 @@ class EvaluationEngine:
                     eval_columns=run.eval_columns,
                 )
                 run.instances.append(instance)
+                
+                # Persist every 2 instances to balance safety and I/O
+                if (i + 1) % 2 == 0:
+                    self._persist_run(run)
 
             run.statistics = self._compute_statistics(run)
             run.status = "completed"
@@ -673,3 +701,4 @@ class EvaluationEngine:
             statistics=data.get("statistics", {}),
             error=data.get("error"),
         )
+
