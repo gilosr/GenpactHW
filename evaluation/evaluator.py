@@ -87,6 +87,7 @@ class InstanceResult:
     passed: bool = False
     latency_ms: int = 0
     error: str | None = None
+    execution_accuracy: bool | None = None
 
 
 @dataclass
@@ -431,6 +432,19 @@ class EvaluationEngine:
 
         elapsed_ms = int((time.time() - instance_start) * 1000)
 
+        # 4. Execution accuracy (deterministic, no LLM)
+        expected_sql = row.get("expected_sql", "").strip()
+        if expected_sql:
+            from agent.nodes import _get_db
+            db_manager = getattr(manager, "_db_manager", None) or _get_db()
+            ex_result = self._execute_accuracy(
+                db_manager=db_manager,
+                expected_sql=expected_sql,
+                agent_sql=agent_sql,
+            )
+        else:
+            ex_result = None
+
         return InstanceResult(
             row_index=row_index,
             input_text=input_text,
@@ -440,6 +454,7 @@ class EvaluationEngine:
             avg_score=round(avg_score, 2),
             passed=passed,
             latency_ms=elapsed_ms,
+            execution_accuracy=ex_result,
         )
 
     def _judge_column(

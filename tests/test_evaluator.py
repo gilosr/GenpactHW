@@ -442,3 +442,37 @@ class TestExecuteAccuracy:
         )
         assert result is False
 
+
+class TestExecuteAccuracyIntegration:
+    def test_instance_result_includes_execution_accuracy(self, engine):
+        import unittest.mock as mock
+
+        with mock.patch.object(engine, "_judge_column") as mock_judge, \
+             mock.patch.object(engine, "_execute_accuracy", return_value=True) as mock_ex:
+            mock_judge.return_value = ColumnScore(
+                column_name="expected_answer_hint",
+                score=5, score_label="EXCELLENT",
+                reasoning="ok", confidence=0.9,
+                expected="6 teachers", actual="6 teachers",
+            )
+
+            mock_manager = mock.MagicMock()
+            mock_manager.create_session.return_value = "t1"
+            mock_manager.ask.return_value = {
+                "answer": "There are 6 teachers.",
+                "sql_query": "SELECT COUNT(*) FROM teachers",
+            }
+
+            result = engine._evaluate_instance(
+                manager=mock_manager,
+                row={
+                    "question": "How many?",
+                    "expected_answer_hint": "6 teachers",
+                    "expected_sql": "SELECT COUNT(*) FROM teachers",
+                },
+                row_index=1,
+                input_column="question",
+                eval_columns=["expected_answer_hint"],
+            )
+
+            assert result.execution_accuracy is True
