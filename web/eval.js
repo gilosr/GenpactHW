@@ -10,6 +10,7 @@ const evalState = {
   inputColumn: null,
   evalColumns: [],
   selectedIndices: [],
+  previewAllRows: false,
   currentRunId: null,
   results: null,
   pollTimer: null,
@@ -274,6 +275,11 @@ function evalOnColumnChange() {
   evalUpdateSelectionCount();
 }
 
+function evalShowAllPreview() {
+  evalState.previewAllRows = true;
+  evalRenderPreviewTable();
+}
+
 function evalRenderPreviewTable() {
   const table = E("eval-preview-table");
   if (!evalState.preview.length) {
@@ -286,7 +292,6 @@ function evalRenderPreviewTable() {
   const isEval = (c) => evalState.evalColumns.includes(c);
 
   const allSelected = evalState.selectedIndices.length === evalState.rowCount;
-  const noneSelected = evalState.selectedIndices.length === 0;
 
   let html = "<thead><tr>";
   html += `<th style="width:40px;text-align:center"><input type="checkbox" ${allSelected ? 'checked' : ''} onchange="evalToggleAllSelection(this.checked)" /></th>`;
@@ -299,11 +304,18 @@ function evalRenderPreviewTable() {
   }).join("");
   html += "</tr></thead><tbody>";
 
-  evalState.preview.slice(0, 10).forEach((row, idx) => {
-    const isRowSelected = evalState.selectedIndices.includes(idx);
+  const rowsToDisplay = evalState.previewAllRows ? evalState.preview : evalState.preview.slice(0, 10);
+
+  rowsToDisplay.forEach((row, displayIdx) => {
+    // Calculate original absolute index
+    const absoluteIdx = displayIdx; 
+    // Since rowsToDisplay is either the whole array or the first 10, 
+    // displayIdx matches absoluteIdx for the first 10.
+    
+    const isRowSelected = evalState.selectedIndices.includes(absoluteIdx);
     html += `<tr style="${isRowSelected ? '' : 'opacity:0.5;background:#f9fafb'}">`;
-    html += `<td style="text-align:center"><input type="checkbox" ${isRowSelected ? 'checked' : ''} onchange="evalToggleRowSelection(${idx})" /></td>`;
-    html += `<td style="color:#9ba0ad;font-family:'JetBrains Mono';font-size:11px">${idx + 1}</td>`;
+    html += `<td style="text-align:center"><input type="checkbox" ${isRowSelected ? 'checked' : ''} onchange="evalToggleRowSelection(${absoluteIdx})" /></td>`;
+    html += `<td style="color:#9ba0ad;font-family:'JetBrains Mono';font-size:11px">${absoluteIdx + 1}</td>`;
     html += cols.map(c => {
       let cls = "";
       if (isInput(c)) cls = "eval-col-highlight-input";
@@ -314,9 +326,12 @@ function evalRenderPreviewTable() {
     html += "</tr>";
   });
 
-  if (evalState.rowCount > 10) {
-    html += `<tr><td colspan="${cols.length + 2}" style="text-align:center;padding:10px;color:#727785;font-size:11px;background:#f8f9fa">
-      Showing first 10 rows. ${evalState.rowCount - 10} more rows hidden.
+  if (!evalState.previewAllRows && evalState.rowCount > 10) {
+    html += `<tr><td colspan="${cols.length + 2}" style="text-align:center;padding:12px;background:#f8f9fa">
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <span style="color:#727785;font-size:11px">Showing first 10 rows. ${evalState.rowCount - 10} more rows hidden.</span>
+        <button class="eval-filter-btn" style="background:#0058be;color:#fff;border-color:#0058be" onclick="evalShowAllPreview()">Show All Rows</button>
+      </div>
     </td></tr>`;
   }
 

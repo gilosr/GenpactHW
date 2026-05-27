@@ -53,6 +53,60 @@ def test_ask_rejects_empty_question():
     assert "Question is required" in response.json()["detail"]
 
 
+def test_cache_clear_endpoint_flushes_query_cache():
+    import api.main as main
+    from agent.cache import QueryCache
+    from agent.conversation_manager import ConversationManager
+
+    manager = ConversationManager(cache=QueryCache())
+    manager._cache.put(
+        "How many students?",
+        "SELECT COUNT(*) FROM students",
+        [{"count": 20}],
+        "There are 20 students.",
+    )
+    assert manager._cache.stats()["size"] == 1
+
+    main._manager = manager
+    client = TestClient(main.app)
+    response = client.post("/api/cache/clear")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema_cache_cleared"] is True
+    assert payload["query_cache"]["cleared"] is True
+    assert payload["query_cache"]["entries_removed"] == 1
+    assert manager._cache.stats()["size"] == 0
+
+
+def test_ask_endpoint_surfaces_cached_flag_on_cache_hit(monkeypatch):
+    import api.main as main
+
+    class FakeManager:
+        def create_session(self) -> str:
+            return "session-cached"
+
+        def ask(self, question: str, thread_id: str, bypass_cache: bool = False) -> dict:
+            return {
+                "answer": "There are 20 students.",
+                "steps": ["cache_hit: returned cached answer"],
+                "sql_query": "SELECT COUNT(*) FROM students",
+                "thread_id": thread_id,
+                "turn": 1,
+                "cached": True,
+            }
+
+    monkeypatch.setattr(main, "_manager", FakeManager())
+    client = TestClient(main.app)
+    response = client.post(
+        "/api/ask",
+        json={"question": "How many students are there?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["cached"] is True
+
+
 def test_ask_endpoint_returns_live_trace(monkeypatch):
     import api.main as main
 

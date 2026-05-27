@@ -41,6 +41,7 @@ class RunRequest(BaseModel):
     input_column: str = Field(..., description="Column name containing the input/question")
     eval_columns: list[str] = Field(..., description="Column names to evaluate against")
     dataset_name: str = Field(default="Untitled", description="Human-readable name for the run")
+    selected_indices: list[int] | None = Field(default=None, description="Optional list of row indices to evaluate")
 
 
 # ── Endpoints ──────────────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ async def start_run(request: RunRequest) -> dict[str, Any]:
             input_column=request.input_column,
             eval_columns=request.eval_columns,
             dataset_name=request.dataset_name,
+            selected_indices=request.selected_indices,
         )
         return {"run_id": run_id, "status": "running"}
     except ValueError as exc:

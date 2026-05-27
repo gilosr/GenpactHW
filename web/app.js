@@ -72,6 +72,7 @@ const NODE_ICONS = {
   format_answer:   { icon: "chat_bubble",     badge: "LLM",   badgeCls: "badge-llm",   statusIcon: { ok: "check_circle" } },
   polite_decline:  { icon: "not_interested",  badge: "GATE",  badgeCls: "badge-gate",  statusIcon: { declined: "do_not_disturb_on" } },
   error_response:  { icon: "error",           badge: "SYS",   badgeCls: "badge-error", statusIcon: { error: "error_circle" } },
+  cache_hit:       { icon: "cached",          badge: "CACHE", badgeCls: "badge-cache", statusIcon: { ok: "cached" } },
 };
 
 const NODE_CONFIG = {
@@ -84,6 +85,7 @@ const NODE_CONFIG = {
   format_answer:   { model: '"gpt-4o-mini"', temperature: "0.2",  style: '"conversational"' },
   polite_decline:  { type: '"static_response"', scope: '"university_db"' },
   error_response:  { type: '"error_handler"' },
+  cache_hit:       { source: '"QueryCache"', lookup: '"exact_match"', graph_skipped: "true" },
 };
 
 // ── INPUT/OUTPUT STATE INFERENCE ──────────────────────────
@@ -105,6 +107,7 @@ function nodeInput(node, item, trace) {
     case "format_answer":    return { row_count: String(item.row_count ?? "n/a"), question: q };
     case "polite_decline":   return { question: q, classification: '"not_relevant"' };
     case "error_response":   return { trigger: '"pipeline_error"', fatal: "true" };
+    case "cache_hit":        return { question: q, source: '"QueryCache"' };
     default:                 return { detail: `"${item.detail}"` };
   }
 }
@@ -135,6 +138,10 @@ function nodeOutput(node, item, trace) {
       return { response: '"decline"', reason: '"off_topic"' };
     case "error_response":
       return { error: "true" };
+    case "cache_hit": {
+      const ans = trace.answer || "";
+      return { answer: `"${ans.substring(0, 70)}${ans.length > 70 ? "…" : ""}"`, served_from_cache: "true" };
+    }
     default:
       return { result: `"${item.detail}"` };
   }
@@ -164,6 +171,8 @@ function nodePreview(node, item, trace) {
       return { text: "Declined", cls: "preview-declined" };
     case "error_response":
       return { text: "Error", cls: "preview-error" };
+    case "cache_hit":
+      return { text: "From cache", cls: "preview-ok" };
     default:
       return null;
   }
@@ -346,11 +355,18 @@ async function copyJson(btn, nodeIndex, ev) {
 function renderMetrics(trace) {
   const m = trace.metrics || {};
   const outcome = trace.outcome || "UNKNOWN";
+  const fromCache = trace.cached === true;
   const chipCls = {
     SUCCESS: "chip-success", SELF_HEALED: "chip-healed",
     BLOCKED: "chip-blocked", ERROR: "chip-error",
     DECLINED: "chip-declined", UNKNOWN: "chip-unknown",
   }[outcome] || "chip-unknown";
+  const cacheChip = fromCache
+    ? `<span class="metric-chip chip-cached" title="Answer returned from QueryCache without running the graph">
+        <span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;font-variation-settings:'FILL' 1">cached</span>
+        CACHED
+      </span>`
+    : `<span class="metric-chip chip-live" title="Answer produced by a live graph run">LIVE</span>`;
 
   el("metrics").innerHTML = `
     <div class="metric-card">
@@ -364,13 +380,17 @@ function renderMetrics(trace) {
     <div class="metric-card" style="display:flex;align-items:center;justify-content:space-between">
       <div>
         <p class="metric-label">VALIDATION</p>
-        <span class="metric-val" style="font-size:16px">${m.validation_health || "SECURE"}</span>
+        <span class="metric-val" style="font-size:16px">${fromCache ? "N/A" : (m.validation_health || "SECURE")}</span>
       </div>
-      <span class="material-symbols-outlined" style="font-size:26px;color:#0058be;font-variation-settings:'FILL' 1">verified_user</span>
+      <span class="material-symbols-outlined" style="font-size:26px;color:${fromCache ? "#1b5e20" : "#0058be"};font-variation-settings:'FILL' 1">${fromCache ? "cached" : "verified_user"}</span>
     </div>
     <div class="metric-card">
       <p class="metric-label">OUTCOME</p>
       <span class="metric-chip ${chipCls}">${outcome}</span>
+    </div>
+    <div class="metric-card">
+      <p class="metric-label">CACHE</p>
+      ${cacheChip}
     </div>
   `;
 }
@@ -383,6 +403,11 @@ function renderTrace(trace) {
 
   el("answer-text").textContent = trace.answer || "No answer returned.";
   el("answer-panel").style.display = "block";
+
+  const cacheBadge = el("cache-answer-badge");
+  if (cacheBadge) {
+    cacheBadge.style.display = trace.cached === true ? "inline" : "none";
+  }
 
   renderMetrics(trace);
 
@@ -398,17 +423,58 @@ function renderTrace(trace) {
 }
 
 // ── API ───────────────────────────────────────────────────
+let _healthBadgeDefault = "";
+
 async function loadHealth() {
   try {
     const h = await fetch("/api/health").then(r => r.json());
     const badge = el("health-badge");
     const ls = h.langsmith?.configured ? "LangSmith ✓" : "Offline";
-    badge.textContent = `${h.status.toUpperCase()} · ${ls}`;
+    _healthBadgeDefault = `${h.status.toUpperCase()} · ${ls}`;
+    badge.textContent = _healthBadgeDefault;
     badge.className = "health-badge ok";
   } catch {
     const badge = el("health-badge");
-    badge.textContent = "Unavailable";
+    _healthBadgeDefault = "Unavailable";
+    badge.textContent = _healthBadgeDefault;
     badge.className = "health-badge err";
+  }
+}
+
+async function clearCache() {
+  const btn = el("clear-cache-btn");
+  if (!btn) return;
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/cache/clear", { method: "POST" });
+    if (!r.ok) {
+      const p = await r.json().catch(() => ({}));
+      throw new Error(p.detail || `Request failed: ${r.status}`);
+    }
+    const data = await r.json();
+    const removed = data.query_cache?.entries_removed ?? 0;
+    const badge = el("health-badge");
+    if (badge) {
+      badge.textContent = `Cache cleared · ${removed} entr${removed === 1 ? "y" : "ies"} removed`;
+      badge.className = "health-badge ok";
+      setTimeout(() => {
+        if (_healthBadgeDefault) {
+          badge.textContent = _healthBadgeDefault;
+        } else {
+          loadHealth();
+        }
+      }, 2800);
+    }
+  } catch (err) {
+    const badge = el("health-badge");
+    if (badge) {
+      badge.textContent = `Cache clear failed`;
+      badge.className = "health-badge err";
+      setTimeout(loadHealth, 2800);
+    }
+    console.error(err);
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -467,7 +533,7 @@ function loadExample(i) {
 
 async function ask(question) {
   el("answer-panel").style.display = "none";
-  el("metrics").innerHTML = ["LATENCY","RETRIES","VALIDATION","OUTCOME"].map(l =>
+  el("metrics").innerHTML = ["LATENCY","RETRIES","VALIDATION","OUTCOME","CACHE"].map(l =>
     `<div class="metric-card"><p class="metric-label">${l}</p><div class="metric-loading"></div></div>`
   ).join("");
   el("timeline").innerHTML = `
@@ -505,6 +571,10 @@ el("ask-form").addEventListener("submit", async (e) => {
 el("run-query-btn").addEventListener("click", () => {
   const q = (el("question-input").value || "").trim();
   if (q) el("ask-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+});
+
+el("clear-cache-btn")?.addEventListener("click", () => {
+  clearCache();
 });
 
 el("copy-sql-btn").addEventListener("click", async () => {

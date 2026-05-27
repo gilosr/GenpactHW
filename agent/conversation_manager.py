@@ -183,6 +183,29 @@ class ConversationManager:
             "cached": False,
         }
 
+    def clear_query_cache(self) -> dict:
+        """Flush the query cache and return a summary of what was removed.
+
+        Returns:
+            dict with keys:
+              - "cleared" (bool): Whether a cache was configured and cleared
+              - "entries_removed" (int): Entry count before clear
+              - "stats" (dict): Post-clear stats from QueryCache.stats()
+        """
+        if self._cache is None:
+            return {
+                "cleared": False,
+                "entries_removed": 0,
+                "stats": {"size": 0, "hits": 0, "misses": 0, "hit_rate": 0.0, "evictions": 0},
+            }
+        before = self._cache.stats()
+        self._cache.clear()
+        return {
+            "cleared": True,
+            "entries_removed": before["size"],
+            "stats": self._cache.stats(),
+        }
+
     def reset_session(self, thread_id: str) -> None:
         """Clear history and remove the session.
 

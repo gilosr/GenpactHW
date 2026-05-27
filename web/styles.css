@@ -368,7 +368,7 @@ body {
 /* ── METRICS ─────────────────────────────────────────────── */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 10px;
 }
 
@@ -421,6 +421,23 @@ body {
 .chip-error    { background: #ffdad6; color: #ba1a1a; }
 .chip-declined { background: #e7e8e9; color: #424754; }
 .chip-unknown  { background: #e7e8e9; color: #727785; }
+.chip-cached   { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+.chip-live     { background: #f3f4f5; color: #424754; border: 1px solid #d8dae0; }
+
+.cache-answer-badge {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+  vertical-align: middle;
+}
+
+.badge-cache { background: #e8f5e9; color: #1b5e20; }
 
 .metric-loading {
   height: 24px;

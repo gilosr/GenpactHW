@@ -12,8 +12,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
 from agent.cache import QueryCache
-from config import settings
 from agent.conversation_manager import ConversationManager
+from agent.nodes import clear_schema_cache
+from config import settings
 from db.database import DatabaseManager
 from tracing.tracer import get_trace_summary, verify_langsmith_config
 from api.eval_routes import router as eval_router
@@ -60,6 +61,7 @@ def _node_description(node: str, detail: str) -> str:
         "format_answer": "Converted verified rows into a human-readable answer.",
         "polite_decline": "Stopped early because the question is outside the database scope.",
         "error_response": "Returned a controlled error response without another LLM call.",
+        "cache_hit": "Served a prior answer from the in-memory query cache without running the graph.",
     }
     return descriptions.get(node, detail or "Recorded graph execution step.")
 
@@ -102,6 +104,8 @@ def _output_for_step(
         return "answer", "Decline output", final_answer or detail
     if node == "error_response":
         return "error", "Error output", final_answer or detail
+    if node == "cache_hit":
+        return "answer", "Cached answer", final_answer or detail
     return "text", "Step output", detail
 
 
@@ -263,6 +267,18 @@ def schema_summary() -> dict[str, Any]:
 @app.get("/api/traces/examples")
 def examples() -> dict[str, Any]:
     return {"traces": _example_traces()}
+
+
+@app.post("/api/cache/clear")
+def clear_cache() -> dict[str, Any]:
+    """Flush in-memory query and schema caches for the running API process."""
+    manager = _get_manager()
+    query_cache = manager.clear_query_cache()
+    clear_schema_cache()
+    return {
+        "query_cache": query_cache,
+        "schema_cache_cleared": True,
+    }
 
 
 @app.post("/api/ask")

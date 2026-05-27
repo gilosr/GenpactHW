@@ -200,6 +200,22 @@ class TestContextualQuestion:
 
 
 class TestCacheIntegration:
+    def test_clear_query_cache_removes_entries(self):
+        cache = QueryCache()
+        cache.put("How many students?", "SELECT 1", [], "Twenty students")
+        cm = _make_cm(cache=cache)
+        result = cm.clear_query_cache()
+        assert result["cleared"] is True
+        assert result["entries_removed"] == 1
+        assert result["stats"]["size"] == 0
+        assert cache.get("How many students?") is None
+
+    def test_clear_query_cache_when_disabled(self):
+        cm = _make_cm(cache=None)
+        result = cm.clear_query_cache()
+        assert result["cleared"] is False
+        assert result["entries_removed"] == 0
+
     def test_ask_with_cache_hit_returns_cached_true(self):
         cache = QueryCache()
         # Pre-populate the cache

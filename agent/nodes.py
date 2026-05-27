@@ -90,6 +90,12 @@ def set_db(db: DatabaseManager | None) -> None:
     """
     global _db, _cached_schema, _cached_schema_at
     _db = db
+    clear_schema_cache()
+
+
+def clear_schema_cache() -> None:
+    """Invalidate the in-process schema introspection cache."""
+    global _cached_schema, _cached_schema_at
     _cached_schema = None
     _cached_schema_at = 0.0
 

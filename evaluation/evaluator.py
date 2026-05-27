@@ -262,7 +262,7 @@ class EvaluationEngine:
         return {
             "session_id": session_id,
             "columns": list(columns),
-            "preview": rows[:5],
+            "preview": rows,  # Return all rows for selection
             "row_count": len(rows),
             "filename": filename,
         }
@@ -324,6 +324,11 @@ class EvaluationEngine:
 
         if not target_rows:
             raise ValueError("No valid rows selected for evaluation.")
+
+        logger.info(
+            "Starting evaluation '%s' with %d rows (Indices: %s)", 
+            dataset_name, len(target_rows), selected_indices
+        )
 
         run_id = str(uuid.uuid4())
         run = EvaluationRun(
