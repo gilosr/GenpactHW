@@ -1,4 +1,4 @@
-# Architecture & Design — Genpact University QA LangGraph Agent
+# Architecture & Design — University QA LangGraph Agent
 
 A natural-language question-answering system that translates English questions about a university database into SQL, executes them, and returns human-readable answers — orchestrated by a LangGraph agent.
 
